@@ -1,5 +1,6 @@
 import { greenpathSvg } from './scenes/greenpath.js'
 import { fogCanyonSvg } from './scenes/fogcanyon.js'
+import { celesteSvg } from './scenes/celeste.js'
 
 // Les fonds disponibles : le nom de la scène, son dessin, et la "vitre" qui garde le texte lisible par-dessus.
 const SCENES = {
@@ -14,6 +15,12 @@ const SCENES = {
     scene: fogCanyonSvg,
     alt: 'Fog Canyon : un canyon de brume violette où des méduses lumineuses montent',
     glass: { blur: 8, tint: '#0a0820', opacity: 0.55 },
+  },
+  celeste: {
+    title: 'Celeste',
+    scene: celesteSvg,
+    alt: 'Celeste : la Cité oubliée de nuit, avec Madeline qui traverse l'écran en double dash',
+    glass: { blur: 8, tint: '#0a0a24', opacity: 0.5 },
   },
 }
 const DEFAULT_SCENE = 'greenpath'
