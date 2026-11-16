@@ -1,301 +1,207 @@
-// Celeste : la Cité oubliée de nuit, dans l'esprit des captures officielles du jeu (celestegame.com) :
-// ciel bleu nuit étoilé, montagnes enneigées, sapins sombres, corniches enneigées, chalet éclairé, lampadaire,
-// neige qui tombe, et Madeline qui traverse l'écran en double dash d'une corniche à l'autre.
+// Celeste, niveau 1 : la montagne au coucher du soleil, dans l'esprit de la capture officielle 08 (celestegame.com) :
+// ciel indigo qui vire au rose, à l'orange et au jaune, mer de nuages, vent en traits blancs, rochers violets,
+// grands drapeaux cyan, magenta et verts qui flottent.
+// Madeline y fait un HYPERDASH d'une corniche à l'autre, puis revient par un hyperdash inversé :
+// elle court, se baisse en dash vers le sol, saute pendant le dash (saut bas et très rapide, 325 px/s selon le wiki),
+// file au ras du vide, atterrit en dérapant. Cheveux : rose (2 dashes), blanc pendant le dash, auburn après, rose à l'atterrissage.
 // Dessin original, sur une grille de 320 x 200 pixels (1 pixel = 5 unités du SVG), proche du 320 x 180 du jeu.
-// Couleurs de cheveux de Madeline comme dans le jeu : auburn (1 dash), blanc (pendant le dash), cyan (0 dash), rose (2 dashes).
-// RÈGLE : les sujets restent sur les bords (corniches gauche et droite) ; le centre n'a que du décor lointain,
-// et Madeline le traverse en dash.
+// RÈGLE : les sujets (rochers, drapeaux) restent sur les bords ; le centre n'a que du ciel, des nuages et du vent.
 // Chaîne de caractères pure : pas de DOM, rien d'extérieur, même résultat à chaque appel.
 
 import { W, H, Layer, mulberry32, noise, bandsSvg, disc } from './pixel.js'
-import { madelineDefs, madelinePose } from './madeline.js'
+import { madelineDefs } from './madeline.js'
+import { timeline, run, madelineWithTrail, freezeCss } from './timeline.js'
 
 const GROUND_Y = 150
-const SKY = ['#080618', '#0d0c2e', '#161a56', '#222c80', '#3040a0']
-const SNOW = '#ffffff'
-const SNOW_SHADE = '#c8dcf8'
-const SNOW_BLUE = '#6b8cff'
+const LEFT_EDGE = 108
+const RIGHT_EDGE = 212
+const SKY = ['#241e6e', '#3a2a8a', '#6a3a9a', '#b0488a', '#f0745a', '#ffa83c', '#ffe070']
 
-// Une crête de montagne en escalier : une couche de neige dessous, le corps par-dessus un peu plus bas.
-function ridge(fn, y1, color) {
-  let d = `M0 ${y1}V${Math.round(fn(0))}`
-  for (let x = 2; x <= W; x += 2) d += `H${x}V${Math.round(fn(x))}`
-  return `<path fill="${color}" d="${d}V${y1}z"/>`
-}
+const CLOUD_TONES = [
+  { base: '#f07a5a', light: '#ff9a70' },
+  { base: '#ffa83c', light: '#ffc860' },
+  { base: '#ffd070', light: '#fff0a0' },
+  { base: '#e8606a', light: '#ff8a8a' },
+]
 
-const farTop = (x) => 112 - 20 * Math.abs(Math.sin(x * 0.021 + 0.6)) - 10 * Math.sin(x * 0.067)
-const nearTop = (x) => 130 - 14 * Math.abs(Math.sin(x * 0.032 + 2)) - 6 * Math.sin(x * 0.11)
-
-function mountains() {
-  const cap = (x) => 4 + 3 * Math.sin(x * 0.4) * Math.sin(x * 0.4) + 2 * Math.abs(Math.sin(x * 0.09))
-  return (
-    ridge(farTop, 170, '#a8bcff') +
-    ridge((x) => farTop(x) + cap(x), 170, '#0e1340') +
-    ridge(nearTop, 170, '#8aa0f0') +
-    ridge((x) => nearTop(x) + cap(x + 7) + 1, 170, '#080c2e')
-  )
-}
-
-// Un sapin enneigé : des étages de plus en plus larges, la pointe de chaque étage couverte de neige.
-function pine(w, h) {
-  const l = new Layer(w, h)
-  const tiers = Math.max(3, Math.round(h / 7))
-  const th = h / tiers
-  const cx = (w - 1) / 2
-  for (let k = 0; k < tiers; k++) {
-    const y0 = Math.round(k * th)
-    const y1 = Math.round((k + 1) * th) + 1
-    const maxHalf = 1 + ((k + 1) / tiers) * (w / 2 - 1)
-    for (let y = y0; y < Math.min(y1, h - 3); y++) {
-      const t = (y - y0) / Math.max(1, y1 - y0)
-      const half = Math.max(0.5, maxHalf * (0.35 + 0.65 * t))
-      for (let x = Math.round(cx - half); x <= Math.round(cx + half); x++) {
-        l.set(x, y, y - y0 < 2 ? SNOW_SHADE : x > cx ? '#0a1618' : '#0f2426')
-      }
-    }
+// Mer de nuages chaude, en grosses boules unies qui se chevauchent : plus on descend, plus c'est rose.
+function clouds(rnd) {
+  const l = new Layer()
+  const pts = []
+  for (let i = 0; i < 130; i++) pts.push([Math.round(rnd() * W), Math.round(104 + rnd() * 74), 6 + Math.floor(rnd() * 8)])
+  pts.sort((p, q) => p[1] - q[1])
+  for (const [x, y, r] of pts) {
+    const tone = y < 122 ? '#ffe070' : y < 140 ? '#ffc050' : y < 156 ? '#ff9a50' : y < 168 ? '#f07a5a' : '#e8606a'
+    disc(l, x, y, r, tone)
+    if (rnd() < 0.5) disc(l, x - 2, y - 2, Math.max(2, r - 4), y < 122 ? '#fff0a0' : y < 140 ? '#ffd870' : y < 156 ? '#ffb070' : '#f89070')
   }
-  for (let y = h - 3; y < h; y++) l.set(Math.round(cx), y, '#3a2218')
   return l
 }
 
-// Une corniche enneigée : un haut de neige blanche avec un liseré bleu, de la terre sombre dessous.
+// Un rocher violet lointain, flottant, plus pâle.
+function rockBlock(w, h) {
+  const l = new Layer(w, h)
+  for (let y = 0; y < h; y++) {
+    const inset = y > h * 0.6 ? Math.round((y - h * 0.6) * 0.5) : 0
+    for (let x = inset; x < w - inset; x++) l.set(x, y, y < 2 ? '#c8a0f0' : y < h * 0.5 ? '#9a62d0' : '#6a3ab0')
+  }
+  return l
+}
+
+// Une corniche de pierre violette : un haut clair, un corps tacheté, un dessous sombre en dents.
 function ledge(side, rnd) {
   const l = new Layer()
-  const top = (x) => GROUND_Y + Math.round(1.2 * noise(x * 0.5))
-  const reach = (y) => 74 + Math.round(3 * Math.sin(y * 0.3)) - (y > 175 ? 4 : 0)
-  for (let y = 0; y < H; y++) {
-    for (let k = 0; k < reach(y); k++) {
+  const top = (x) => GROUND_Y + Math.round(1.2 * noise(x * 0.4))
+  const reach = (y) => (side === 'left' ? LEFT_EDGE : W - RIGHT_EDGE) + Math.round(3 * Math.sin(y * 0.4)) - (y > 168 ? Math.round((y - 168) * 0.9) : 0)
+  for (let y = GROUND_Y - 3; y < H; y++) {
+    for (let k = 0; k < Math.max(0, reach(y)); k++) {
       const x = side === 'left' ? k : W - 1 - k
       const t = top(x)
       if (y < t) continue
       const depth = y - t
-      let c = '#241a3c'
-      if (depth === 0 || depth === 1) c = SNOW
-      else if (depth === 2) c = SNOW_SHADE
-      else if (depth === 3 && (x * 7) % 5 < 3) c = SNOW_BLUE
-      else if (rnd() < 0.05) c = '#33264f'
-      else if (rnd() < 0.04) c = '#1a1230'
+      let c = '#6a3ab0'
+      if (depth === 0) c = '#d8b0ff'
+      else if (depth === 1) c = '#b890ec'
+      else if (depth < 4) c = '#9a62d0'
+      else if (rnd() < 0.08) c = '#8450c4'
+      else if (rnd() < 0.05) c = '#4a2a88'
       l.set(x, y, c)
     }
   }
   return l
 }
 
-// Le chalet de bois, comme dans la première capture : toit enneigé, fenêtre éclairée, porte, cheminée.
-function cabin() {
-  const l = new Layer(40, 34)
-  for (let y = 14; y < 34; y++) for (let x = 3; x < 35; x++) l.set(x, y, y % 4 === 0 ? '#5a3322' : '#7a4a30')
-  for (let y = 2; y < 14; y++) {
-    const half = 5 + (y - 2) * 1.5
-    for (let x = Math.round(19 - half); x <= Math.round(19 + half); x++) l.set(x, y, '#4a2a2c')
-    l.set(Math.round(19 - half), y, SNOW)
-    l.set(Math.round(19 + half), y, SNOW)
-    if (y < 5) for (let x = Math.round(19 - half); x <= Math.round(19 + half); x++) l.set(x, y, SNOW)
+function pole(h) {
+  const l = new Layer(3, h)
+  for (let y = 0; y < h; y++) {
+    l.set(0, y, '#a85a6a')
+    l.set(1, y, '#7a3a52')
   }
-  for (let y = 12; y < 14; y++) for (let x = 0; x < 40; x++) l.set(x, y, SNOW)
-  for (let y = 3; y < 10; y++) for (let x = 27; x < 31; x++) l.set(x, y, '#5a3322')
-  for (let x = 26; x < 32; x++) l.set(x, 2, SNOW)
-  for (let y = 19; y < 26; y++) for (let x = 22; x < 29; x++) l.set(x, y, '#ffd66a')
-  for (let y = 19; y < 26; y++) l.set(25, y, '#3a2218')
-  for (let x = 22; x < 29; x++) l.set(x, 22, '#3a2218')
-  for (let y = 22; y < 34; y++) for (let x = 9; x < 15; x++) l.set(x, y, '#3a2218')
-  l.set(13, 28, '#ffd66a')
   return l
 }
 
-// Lampadaire : un poteau sombre, une lanterne jaune.
-function lamp() {
-  const l = new Layer(7, 42)
-  for (let y = 9; y < 42; y++) l.set(3, y, '#1a1426')
-  for (let y = 3; y < 9; y++) for (let x = 1; x <= 5; x++) l.set(x, y, '#ffe9a0')
-  for (let x = 0; x <= 6; x++) l.set(x, 2, '#1a1426')
-  l.set(3, 1, '#1a1426')
-  l.set(2, 4, '#fff6d0')
+// Un drapeau qui ondule : une bande dont chaque colonne est un peu plus haut ou plus bas, avec le bout déchiré.
+function flag(w, h, color, dark, phase) {
+  const l = new Layer(w + 3, h + 5)
+  for (let i = 0; i < w; i++) {
+    const off = Math.round(1.6 * Math.sin(i * 0.55 + phase))
+    const cut = i > w - 5 ? Math.round((i - (w - 5)) * 1.2) : 0
+    for (let j = cut; j < h - cut; j++) l.set(i, j + off + 2, j === cut || j === h - cut - 1 ? dark : color)
+    if (i % 4 === 2) l.set(i, 2 + off + Math.floor(h / 2), dark)
+  }
   return l
 }
 
-function sign() {
-  const l = new Layer(14, 14)
-  for (let y = 5; y < 14; y++) l.set(6, y, '#6e4030')
-  for (let y = 1; y < 7; y++) for (let x = 1; x < 13; x++) l.set(x, y, y === 1 || y === 6 ? '#5a3322' : '#9a6040')
-  l.set(3, 3, '#3a2218')
-  l.set(5, 4, '#3a2218')
-  l.set(8, 3, '#3a2218')
-  return l
-}
-
-// Étoiles qui scintillent (blanches, cyan et bleu pâle, comme dans les captures).
-function stars(rnd) {
+// Traits de vent : de longs filets blancs qui filent vers la droite, par paliers.
+function wind(rnd) {
   let out = ''
-  const colors = ['#ffffff', '#78e0e8', '#c8d8ff']
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 26; i++) {
+    const y = Math.round(10 + rnd() * 140)
+    const len = 8 + Math.floor(rnd() * 24)
+    const dur = (1.1 + rnd() * 1.6).toFixed(2)
+    const lag = -(rnd() * 3).toFixed(2)
+    out += `<g class="wind" style="animation-duration:${dur}s;animation-delay:${lag}s"><rect x="-40" y="${y}" width="${len}" height="1" fill="#ffffff" opacity="${(0.5 + rnd() * 0.45).toFixed(2)}"/></g>`
+  }
+  return out
+}
+
+function sparkles(rnd) {
+  let out = ''
+  for (let i = 0; i < 36; i++) {
     const x = Math.round(rnd() * W)
-    const y = Math.round(rnd() * 112)
-    out += `<path class="tw t${i % 3}" style="animation-delay:-${(rnd() * 6).toFixed(1)}s" fill="${colors[i % 3]}" d="M${x} ${y}h1v1h-1z"/>`
+    const y = Math.round(rnd() * 100)
+    out += `<path class="tw t${i % 3}" style="animation-delay:-${(rnd() * 6).toFixed(1)}s" fill="#ffe8ff" d="M${x} ${y}h1v1h-1z"/>`
   }
   return out
 }
 
-// Neige qui tombe en diagonale, par paliers, chaque flocon à son rythme.
-function snow(rnd) {
-  let out = ''
-  for (let i = 0; i < 46; i++) {
-    const x = Math.round(rnd() * (W + 20))
-    const dur = (7 + rnd() * 8).toFixed(1)
-    const lag = -(rnd() * 14).toFixed(1)
-    const big = rnd() < 0.25
-    out += `<g class="snow" style="animation-duration:${dur}s;animation-delay:${lag}s"><rect x="${x}" y="-6" width="${big ? 2 : 1}" height="${big ? 2 : 1}" fill="#ffffff" opacity="${big ? 0.95 : 0.75}"/></g>`
-  }
-  return out
+// ---------- Le parcours de Madeline : hyperdash aller, puis hyperdash inversé au retour ----------
+const P = 7.5
+
+function route() {
+  const w = []
+  const at = (t, x, y, n, pose, hair, flip) => w.push({ t, x, y, n, pose, hair, flip })
+  at(0, 56, 150, 1, 'idle', 'pink', false)
+  run(w, 0.8, 1.4, 56, 100, 150, false, 'pink')
+  // Aller : dash vers le sol et saut pendant le dash. Le bras est tendu, les cheveux deviennent blancs.
+  at(1.4, 100, 150, 3, 'duck', 'white', false)
+  at(1.5, 108, 150, 4, 'dash', 'white', false) // elle quitte la corniche, très bas et très vite
+  at(1.65, 155, 142, 4, 'air', 'red', false) // le dash est fini : cheveux auburn (il lui reste un dash)
+  at(1.8, 200, 146, 2, 'fall', 'red', false)
+  at(1.9, 212, 150, 3, 'run2', 'pink', false) // elle atterrit en dérapant : le dash est rendu, cheveux roses
+  at(2.2, 228, 150, 1, 'idle', 'pink', false)
+  run(w, 2.6, 3.05, 228, 264, 150, false, 'pink')
+  at(3.05, 264, 150, 1, 'idle', 'pink', false)
+  at(3.4, 264, 150, 1, 'idle', 'pink', true) // elle se retourne
+  run(w, 3.9, 4.45, 264, 220, 150, true, 'pink')
+  // Retour : le même hyperdash, en sens inverse.
+  at(4.45, 220, 150, 3, 'duck', 'white', true)
+  at(4.55, 212, 150, 4, 'dash', 'white', true)
+  at(4.7, 165, 142, 4, 'air', 'red', true)
+  at(4.85, 120, 146, 2, 'fall', 'red', true)
+  at(4.95, 108, 150, 3, 'run2', 'pink', true)
+  at(5.25, 92, 150, 1, 'idle', 'pink', true)
+  run(w, 5.65, 6.1, 92, 56, 150, true, 'pink')
+  at(6.1, 56, 150, 1, 'idle', 'pink', true)
+  at(6.45, 56, 150, 1, 'idle', 'pink', false) // elle se retourne vers la droite
+  return w
 }
 
-// ---------- Le parcours de Madeline : double dash de la corniche gauche à la corniche droite, puis retour ----------
-const P = 14 // durée du cycle, en secondes
-const pct = (t) => ((t / P) * 100).toFixed(3) + '%'
-const MIRROR = (x) => 296 - x
-
-// [instant, x, y, nombre de pas jusqu'au point suivant] : les pieds de Madeline, en pixels de la grille.
-const PATH = [
-  [0, 40, 150, 1],
-  [1.5, 40, 150, 8], // saut
-  [1.85, 56, 126, 8], // premier dash, en diagonale
-  [2.2, 128, 96, 12], // il file
-  [2.7, 146, 100, 8], // second dash, à l'horizontale
-  [3.05, 218, 100, 12],
-  [3.6, 240, 122, 12], // elle retombe
-  [4.1, 256, 150, 1], // atterrit sur la corniche droite
-  [8.5, 256, 150, 8], // repart vers la gauche
-  [8.85, MIRROR(56), 126, 8],
-  [9.2, MIRROR(128), 96, 12],
-  [9.7, MIRROR(146), 100, 8],
-  [10.05, MIRROR(218), 100, 12],
-  [10.6, MIRROR(240), 122, 12],
-  [11.1, 40, 150, 1],
-  [P, 40, 150, 1],
-]
-const IDLE = [[0, 1.5], [4.1, 8.5], [11.1, P]]
-const DASH = [[1.85, 2.2], [2.7, 3.05], [8.85, 9.2], [9.7, 10.05]]
-const HAIR = {
-  pink: [[0, 1.85], [4.3, 8.85], [11.3, P]],
-  white: [[1.85, 2.0], [2.7, 2.85], [8.85, 9.0], [9.7, 9.85]],
-  red: [[2.0, 2.7], [9.0, 9.7]],
-  cyan: [[2.85, 4.3], [9.85, 11.3]],
-}
-
-function inside(intervals, t) {
-  return intervals.some(([a, b]) => t >= a - 1e-9 && t < b - 1e-9)
-}
-
-// Une piste d'opacité : 1 pendant les intervalles, 0 le reste du temps ; chaque changement est instantané.
-function track(name, test) {
-  const marks = new Set([0])
-  const add = (t) => {
-    if (t > 0 && t < P) marks.add(Number(t.toFixed(3)))
-  }
-  for (const intervals of [IDLE, DASH, ...Object.values(HAIR)]) {
-    for (const [from, to] of intervals) {
-      add(from)
-      add(to)
-    }
-  }
-  const sorted = [...marks].sort((x, y) => x - y)
-  return `@keyframes ${name}{${sorted.map((t) => `${pct(t)}{opacity:${test(t + 0.0005) ? 1 : 0}}`).join('')}}`
-}
-
-function moveKeyframes() {
-  return `@keyframes mv{${PATH.map(([t, x, y, n]) => `${pct(t)}{transform:translate(${x}px,${y}px);animation-timing-function:steps(${n},end)}`).join('')}}`
-}
-
-const CSS = `
-.mv{animation:mv ${P}s linear infinite}
-${moveKeyframes()}
-.fl{animation:fl ${P}s steps(1,end) infinite}
-@keyframes fl{0%{transform:scaleX(1)}${pct(8.3)}{transform:scaleX(-1)}${pct(13.5)}{transform:scaleX(1)}}
-.p-idle{animation:pIdle ${P}s steps(1,end) infinite}
-.p-dash{animation:pDash ${P}s steps(1,end) infinite}
-.p-air{animation:pAir ${P}s steps(1,end) infinite}
-${track('pIdle', (t) => inside(IDLE, t))}
-${track('pDash', (t) => inside(DASH, t))}
-${track('pAir', (t) => !inside(IDLE, t) && !inside(DASH, t))}
-.h-pink{animation:hPink ${P}s steps(1,end) infinite}
-.h-white{animation:hWhite ${P}s steps(1,end) infinite}
-.h-red{animation:hRed ${P}s steps(1,end) infinite}
-.h-cyan{animation:hCyan ${P}s steps(1,end) infinite}
-${track('hPink', (t) => inside(HAIR.pink, t))}
-${track('hWhite', (t) => inside(HAIR.white, t))}
-${track('hRed', (t) => inside(HAIR.red, t))}
-${track('hCyan', (t) => inside(HAIR.cyan, t))}
-.snow{animation:snow 10s steps(70,end) infinite}
-@keyframes snow{from{transform:translate(0,0)}to{transform:translate(-16px,212px)}}
+const CSS = `${timeline(P, route())}
+.wind{animation:wind 1.6s steps(26,end) infinite}
+@keyframes wind{from{transform:translateX(0)}to{transform:translateX(400px)}}
+.fa{animation:fa 0.6s steps(1,end) infinite}
+.fb{animation:fb 0.6s steps(1,end) infinite}
+@keyframes fa{0%{opacity:1}50%{opacity:0}}
+@keyframes fb{0%{opacity:0}50%{opacity:1}}
 .tw{animation:tw 3s steps(1,end) infinite}
 .t1{animation-duration:4.3s}
 .t2{animation-duration:2.6s}
 @keyframes tw{0%{opacity:1}45%{opacity:.25}70%{opacity:1}}
-.lamp{animation:lampGlow 3s steps(1,end) infinite}
-@keyframes lampGlow{0%{opacity:1}50%{opacity:.75}}
-.win{animation:winGlow 5s steps(1,end) infinite}
-@keyframes winGlow{0%{opacity:1}70%{opacity:.8}85%{opacity:1}}
+.drift{animation:drift 40s steps(20,end) infinite alternate}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(-12px)}}
 @media (prefers-reduced-motion: reduce){*{animation:none !important}}`
 
-// Madeline à sa place : un déplacement, un retournement, trois poses, quatre couleurs de cheveux.
-function madeline(delay, opacity, ghost, at) {
-  const lag = at === undefined ? delay : delay - at
-  const freeze = at === undefined ? '' : ';animation-play-state:paused'
-  const style = ` style="animation-delay:${lag}s${freeze}"`
-  const sprite = ghost
-    ? '<use href="#m-ghost"/>'
-    : madelinePose('idle', 'p-idle') + madelinePose('air', 'p-air') + madelinePose('dash', 'p-dash')
-  return `<g class="mv"${style}><g class="fl"${style}><g transform="translate(-8 -16)" opacity="${opacity}">${sprite}</g></g></g>`
-}
-
-function halo(cx, cy, r, color) {
-  return [[1, 0.06], [0.66, 0.1], [0.36, 0.16]]
-    .map(([k, op]) => `<ellipse cx="${cx}" cy="${cy}" rx="${Math.round(r * k)}" ry="${Math.round(r * k)}" fill="${color}" opacity="${op}"/>`)
-    .join('')
+// Un drapeau sur son mât : deux images qui alternent pour le battement.
+function banner(x, y, h, w, color, dark) {
+  const a = flag(w, 9, color, dark, 0)
+  const b = flag(w, 9, color, dark, 2.2)
+  return (
+    `<g transform="translate(${x} ${y})">${pole(h).svg()}` +
+    `<g class="fa" transform="translate(2 2)">${a.svg()}</g><g class="fb" transform="translate(2 2)">${b.svg()}</g></g>`
+  )
 }
 
 export function celesteSvg(at) {
-  const rnd = mulberry32(5)
+  const rnd = mulberry32(8)
+  const sea = clouds(rnd)
   const ledgeL = ledge('left', rnd)
   const ledgeR = ledge('right', rnd)
-  const house = cabin()
-  const post = lamp()
-  const board = sign()
-  const pinesGap = [86, 100, 114, 128, 140, 152, 166, 178, 192, 206, 220, 232]
-    .map((x, i) => `<use href="#pine${i % 3 === 0 ? 'L' : 'M'}" x="${x - 7}" y="${i % 3 === 0 ? 168 : 176}"/>`)
-    .join('')
-  const pS = pine(11, 20)
-  const pM = pine(15, 28)
-  const pL = pine(21, 40)
+  const block = rockBlock(26, 14)
+  const farBlock = rockBlock(18, 9)
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="100%" height="100%" ` +
-    `preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges"><style>${CSS}${at === undefined ? '' : `.p-idle,.p-air,.p-dash,.h-pink,.h-white,.h-red,.h-cyan{animation-delay:-${at}s;animation-play-state:paused}`}</style>` +
-    `<defs>${madelineDefs()}<g id="pineS">${pS.svg()}</g><g id="pineM">${pM.svg()}</g><g id="pineL">${pL.svg()}</g></defs>` +
-    `<g transform="scale(5)">` +
-    bandsSvg('c', SKY, 0, 170) +
-    stars(rnd) +
-    mountains() +
-    `<rect y="150" width="320" height="50" fill="#0b0a22"/>` +
-    pinesGap +
-    `<rect y="140" width="320" height="30" fill="#3a4aa0" opacity=".1"/>` +
+    `preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges"><style>${CSS}${freezeCss(at)}</style>` +
+    `<defs>${madelineDefs()}</defs><g transform="scale(5)">` +
+    bandsSvg('c', SKY, 0, 160) +
+    `<rect y="150" width="320" height="50" fill="#e8806a"/>` +
+    sparkles(rnd) +
+    `<g class="drift">${sea.svg()}</g>` +
+    // Décor lointain, pâle, au centre : deux petits rochers flottants avec leurs mâts.
+    `<g opacity=".4"><g transform="translate(120 96)">${farBlock.svg()}</g><g transform="translate(188 110)">${farBlock.svg()}</g></g>` +
+    `<g opacity=".4">${banner(129, 72, 24, 13, '#3ac8e8', '#1f8aa8')}${banner(197, 86, 24, 13, '#e83a9a', '#a02070')}</g>` +
+    // Rochers et mâts sur les bords.
+    `<g transform="translate(24 84)">${block.svg()}</g>` +
+    `<g transform="translate(272 70)">${block.svg()}</g>` +
     ledgeL.svg() +
     ledgeR.svg() +
-    // Chalet, sapins, lampadaire et panneau sur les corniches.
-    `<g class="win">${halo(30, GROUND_Y - 12, 16, '#ffd66a')}</g>` +
-    `<g transform="translate(6 ${GROUND_Y - 33})">${house.svg()}</g>` +
-    `<use href="#pineL" x="46" y="${GROUND_Y - 38}"/><use href="#pineM" x="62" y="${GROUND_Y - 26}"/>` +
-    `<use href="#pineL" x="290" y="${GROUND_Y - 38}"/><use href="#pineM" x="306" y="${GROUND_Y - 26}"/>` +
-    `<g class="lamp">${halo(281, GROUND_Y - 36, 20, '#ffd66a')}</g>` +
-    `<g transform="translate(278 ${GROUND_Y - 41})">${post.svg()}</g>` +
-    `<g transform="translate(250 ${GROUND_Y - 12})">${board.svg()}</g>` +
-    // Madeline : d'abord les images fantômes de la traînée du dash, puis elle.
-    madeline(0.24, 0.12, true, at) +
-    madeline(0.16, 0.22, true, at) +
-    madeline(0.1, 0.34, true, at) +
-    madeline(0.05, 0.5, true, at) +
-    madeline(0, 1, false, at) +
-    snow(rnd) +
+    banner(20, 100, 50, 17, '#3ac8e8', '#1f8aa8') +
+    banner(48, 94, 56, 17, '#e83a9a', '#a02070') +
+    banner(256, 96, 54, 17, '#6ad858', '#3a9a38') +
+    banner(288, 102, 48, 17, '#3ac8e8', '#1f8aa8') +
+    madelineWithTrail(at) +
+    wind(rnd) +
     `</g></svg>`
   )
 }

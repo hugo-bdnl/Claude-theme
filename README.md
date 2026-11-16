@@ -6,7 +6,10 @@ Fonds fournis :
 
 - `greenpath` : une grotte verdoyante avec un lac, une cascade, des lianes, des lucioles, un banc et un petit chevalier au masque blanc.
 - `fogcanyon` : un canyon de brume violette où des méduses lumineuses montent de façon irrégulière.
-- `celeste` : la Cité oubliée de nuit (jeu Celeste) : montagnes enneigées, chalet, lampadaire, neige qui tombe, et Madeline qui traverse l'écran en double dash d'une corniche à l'autre (cheveux auburn, blancs pendant le dash, cyan sans dash, roses avec deux dashes, comme dans le jeu).
+- `celeste` : Celeste 1, la montagne au coucher du soleil (capture 08) : Madeline fait un **hyperdash** d'une corniche à l'autre, puis un hyperdash inversé au retour.
+- `celeste2` : Celeste 2, des ruines de nuit (capture 02) : Madeline court, saute, s'agrippe au mur et grimpe, fait un dash par-dessus les pointes, attrape le cristal vert, refait un dash, prend la fraise et atteint la sortie.
+- `celeste3` : Celeste 3, une grotte orange aux contours cyan (capture 11) : Madeline utilise les **plumes dorées** (elle devient une étoile qui vole), évite les pointes magenta et prend la fraise.
+  Les cheveux de Madeline changent comme dans le jeu : rose (2 dashes), blanc pendant le dash, auburn (1 dash), cyan (0 dash).
 
 Les animations avancent par paliers pour garder l'effet pixel, et s'arrêtent si le système demande de réduire les animations.
 
@@ -22,7 +25,7 @@ Puis démarrer une nouvelle session locale dans l'onglet Code.
 ## Utilisation
 
 - `/fond` liste les fonds
-- `/fond greenpath`, `/fond fogcanyon` ou `/fond celeste` applique un fond (le choix est mémorisé)
+- `/fond greenpath`, `/fond fogcanyon`, `/fond celeste`, `/fond celeste2` ou `/fond celeste3` applique un fond (le choix est mémorisé)
 - `/fond off` revient au thème de base de Claude Code
 
 ## Ajouter un fond

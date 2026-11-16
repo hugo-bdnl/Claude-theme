@@ -1,6 +1,8 @@
 import { greenpathSvg } from './scenes/greenpath.js'
 import { fogCanyonSvg } from './scenes/fogcanyon.js'
 import { celesteSvg } from './scenes/celeste.js'
+import { celeste2Svg } from './scenes/celeste2.js'
+import { celeste3Svg } from './scenes/celeste3.js'
 
 // Les fonds disponibles : le nom de la scène, son dessin, et la "vitre" qui garde le texte lisible par-dessus.
 const SCENES = {
@@ -17,10 +19,22 @@ const SCENES = {
     glass: { blur: 8, tint: '#0a0820', opacity: 0.55 },
   },
   celeste: {
-    title: 'Celeste',
+    title: 'Celeste 1 : montagne',
     scene: celesteSvg,
-    alt: "Celeste : la Cité oubliée de nuit, avec Madeline qui traverse l'écran en double dash",
+    alt: "Celeste, la montagne au coucher du soleil : Madeline fait un hyperdash d'une corniche à l'autre",
+    glass: { blur: 8, tint: '#2a1650', opacity: 0.45 },
+  },
+  celeste2: {
+    title: 'Celeste 2 : ruines',
+    scene: celeste2Svg,
+    alt: "Celeste, des ruines de nuit : Madeline grimpe, dashe, attrape un cristal, prend la fraise et atteint la sortie",
     glass: { blur: 8, tint: '#0a0a24', opacity: 0.5 },
+  },
+  celeste3: {
+    title: 'Celeste 3 : grotte aux plumes',
+    scene: celeste3Svg,
+    alt: "Celeste, une grotte orange : Madeline vole avec les plumes dorées entre les pointes magenta et prend la fraise",
+    glass: { blur: 8, tint: '#1a0a2a', opacity: 0.5 },
   },
 }
 const DEFAULT_SCENE = 'greenpath'
