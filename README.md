@@ -7,8 +7,8 @@ Fonds fournis :
 - `greenpath` : une grotte verdoyante avec un lac, une cascade, des lianes, des lucioles, un banc et un petit chevalier au masque blanc.
 - `fogcanyon` : un canyon de brume violette où des méduses lumineuses montent de façon irrégulière.
 - `celeste` : Celeste 1, la montagne au coucher du soleil (capture 08) : Madeline fait un **hyperdash** d'une corniche à l'autre, puis un hyperdash inversé au retour.
-- `celeste2` : Celeste 2, des ruines de nuit (capture 02) : Madeline court, saute, s'agrippe au mur et grimpe, fait un dash par-dessus les pointes, attrape le cristal vert, refait un dash, prend la fraise et atteint la sortie.
-- `celeste3` : Celeste 3, une grotte orange aux contours cyan (capture 11) : Madeline utilise les **plumes dorées** (elle devient une étoile qui vole), évite les pointes magenta et prend la fraise.
+- `celeste2` : Celeste 2, des ruines de nuit (capture 02) : Madeline court, saute, s'agrippe au mur et grimpe, fait un dash par-dessus les pointes, attrape le cristal vert, refait un dash, prend la fraise et atteint la sortie, puis refait le chemin en sens inverse (cristal, dash au-dessus de la tour, glissade le long du mur, saut de mur). Pas de fondu au noir.
+- `celeste3` : Celeste 3, une grotte orange aux contours cyan (capture 11) : Madeline utilise les **plumes dorées** (elle devient une étoile qui vole), évite les pointes magenta et prend la fraise, puis revient par les plumes et retombe dans le puits. Pas de fondu au noir.
   Les cheveux de Madeline changent comme dans le jeu : rose (2 dashes), blanc pendant le dash, auburn (1 dash), cyan (0 dash).
 
 Les animations avancent par paliers pour garder l'effet pixel, et s'arrêtent si le système demande de réduire les animations.

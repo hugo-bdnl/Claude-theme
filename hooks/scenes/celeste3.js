@@ -3,7 +3,8 @@
 // des fleurs rouges, des rochers bordeaux, des pointes magenta, et des plumes dorées.
 // Madeline RÉUSSIT le niveau avec la mécanique des plumes : elle saute dans une plume, devient une étoile qui vole librement
 // (jusqu'à environ 2 s, à 190 px/s), remonte le puits et traverse le couloir en évitant les pointes magenta, se pose,
-// attrape une seconde plume, redescend dans la salle en zigzaguant entre les pointes, prend la fraise ; puis fondu au noir.
+// attrape une seconde plume, redescend dans la salle en zigzaguant entre les pointes, prend la fraise ; puis elle refait le chemin
+// en sens inverse avec les plumes, et retombe dans le puits.
 // Dessin original, sur une grille de 320 x 200 pixels (1 pixel = 5 unités du SVG), proche du 320 x 180 du jeu.
 // Chaîne de caractères pure : pas de DOM, rien d'extérieur, même résultat à chaque appel.
 
@@ -11,7 +12,7 @@ import { W, H, Layer, mulberry32, bandsSvg, disc, foliage } from './pixel.js'
 import { madelineDefs } from './madeline.js'
 import { timeline, run, madelineWithTrail, freezeCss } from './timeline.js'
 
-const P = 8.2
+const P = 10.6
 
 // L'intérieur de la grotte : le puits à droite, le couloir en haut, la grande salle à gauche.
 const free = (x, y) =>
@@ -131,9 +132,10 @@ function halo(cx, cy, r, color) {
     .join('')
 }
 
-// ---------- Le parcours de Madeline ----------
+// ---------- Le parcours de Madeline : l'aller, puis le retour avec les plumes ----------
 const F1 = [262, 168]
 const F2 = [100, 64]
+const F3 = [56, 150]
 const BERRY = [38, 148]
 
 function route() {
@@ -165,8 +167,29 @@ function route() {
   at(5.2, 40, 150, 2, 'fall', true)
   at(5.35, 40, 156, 2, 'run2', true) // elle se pose et prend la fraise
   at(5.6, 38, 156, 1, 'idle', true)
-  at(6.7, 256, 192, 1, 'idle', false) // fondu au noir : retour au départ
-  at(7.3, 256, 192, 1, 'idle', false)
+  // Retour : elle se retourne, saute dans la plume n°3, remonte la grande salle en étoile,
+  // enchaîne sur la plume n°2 (le vol continue), traverse le couloir, puis se laisse tomber dans le puits.
+  at(5.9, 38, 156, 1, 'idle', false)
+  run(w, 6.2, 6.45, 38, 52, 156, false, 'red')
+  at(6.45, 52, 156, 3, 'air', false)
+  at(6.6, 55, 148, 2, 'air', false)
+  at(6.7, F3[0], F3[1], 3, 'star', false)
+  at(6.95, 66, 128, 3, 'star', false)
+  at(7.2, 84, 104, 3, 'star', false)
+  at(7.45, 94, 82, 3, 'star', false)
+  at(7.65, F2[0], F2[1], 3, 'star', false) // la plume n°2 relance le vol
+  at(7.9, 130, 62, 3, 'star', false)
+  at(8.1, 148, 58, 3, 'star', false)
+  at(8.3, 172, 52, 3, 'star', false)
+  at(8.5, 198, 60, 3, 'star', false)
+  at(8.7, 222, 50, 3, 'star', false)
+  at(8.9, 248, 56, 3, 'star', false)
+  at(9.05, 258, 76, 2, 'star', false)
+  at(9.1, 258, 80, 4, 'fall', false) // le vol est fini : elle tombe dans le puits, à gauche de la plume n°1
+  at(9.9, 246, 186, 6, 'fall', false)
+  at(9.95, 246, 192, 2, 'run2', false)
+  run(w, 10.1, 10.45, 246, 256, 192, false, 'red')
+  at(10.45, 256, 192, 1, 'idle', false)
   return w
 }
 
@@ -185,13 +208,13 @@ function visible(name, shown) {
 
 const CSS = `${timeline(P, route())}
 .f1{animation:f1 ${P}s steps(1,end) infinite}
-${visible('f1', [[0, 1.2], [6.7, P]])}
+${visible('f1', [[0, 1.2], [4.2, P]])}
 .f2{animation:f2 ${P}s steps(1,end) infinite}
-${visible('f2', [[0, 4.0], [6.7, P]])}
+${visible('f2', [[0, 4.0], [7.0, 7.65], [10.3, P]])}
+.f3{animation:f3 ${P}s steps(1,end) infinite}
+${visible('f3', [[0, 6.7], [9.7, P]])}
 .berry{animation:berry ${P}s steps(1,end) infinite}
-${visible('berry', [[0, 5.6], [6.8, P]])}
-.fade{animation:fade ${P}s steps(1,end) infinite}
-@keyframes fade{0%{opacity:0}${pct(6.2)}{opacity:.3}${pct(6.3)}{opacity:.6}${pct(6.4)}{opacity:1}${pct(6.95)}{opacity:1}${pct(7.05)}{opacity:.6}${pct(7.15)}{opacity:.3}${pct(7.25)}{opacity:0}}
+${visible('berry', [[0, 5.6], [10.3, P]])}
 .sa{animation:sa 0.7s steps(1,end) infinite}
 .sb{animation:sb 0.7s steps(1,end) infinite}
 @keyframes sa{0%{opacity:1}50%{opacity:0}}
@@ -226,7 +249,7 @@ export function celeste3Svg(at) {
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="100%" height="100%" ` +
-    `preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges"><style>${CSS}${freezeCss(at)}${at === undefined ? '' : `.f1,.f2,.berry,.fade{animation-delay:-${at}s;animation-play-state:paused}`}</style>` +
+    `preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges"><style>${CSS}${freezeCss(at)}${at === undefined ? '' : `.f1,.f2,.f3,.berry{animation-delay:-${at}s;animation-play-state:paused}`}</style>` +
     `<defs>${madelineDefs()}</defs><g transform="scale(5)">` +
     bandsSvg('k', ['#ffc860', '#ffb050', '#ff9a40', '#e87a3a', '#c85a38'], 20, 200) +
     `<rect width="320" height="20" fill="#ffc860"/>` +
@@ -240,9 +263,9 @@ export function celeste3Svg(at) {
     // Les plumes, la fraise.
     `<g class="f1"><g class="glow">${halo(F1[0], F1[1], 12, '#ffe060')}</g><g transform="translate(${F1[0] - 4} ${F1[1] - 7})"><g class="bob">${feat.svg()}</g></g></g>` +
     `<g class="f2"><g class="glow">${halo(F2[0], F2[1], 12, '#ffe060')}</g><g transform="translate(${F2[0] - 4} ${F2[1] - 7})"><g class="bob">${feat.svg()}</g></g></g>` +
+    `<g class="f3"><g class="glow">${halo(F3[0], F3[1], 12, '#ffe060')}</g><g transform="translate(${F3[0] - 4} ${F3[1] - 7})"><g class="bob">${feat.svg()}</g></g></g>` +
     `<g class="berry"><g transform="translate(${BERRY[0] - 4} ${BERRY[1] - 8})"><g class="bob">${fruit.svg()}</g></g></g>` +
     madelineWithTrail(at, '#m-ghost-star') +
-    `<rect class="fade" width="320" height="200" fill="#000" opacity="0"/>` +
     `</g></svg>`
   )
 }

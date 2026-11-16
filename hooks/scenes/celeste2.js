@@ -4,7 +4,7 @@
 // Madeline RÉUSSIT le niveau avec les mécaniques du jeu : elle court, saute, s'agrippe au mur et grimpe,
 // fait un dash en diagonale par-dessus les pointes (cheveux blancs, puis cyan sans dash), attrape le cristal vert
 // (le dash revient, le cristal disparaît 2,5 s), refait un dash, atterrit, prend la fraise, atteint la sortie ;
-// puis fondu au noir et retour au départ.
+// puis elle refait le chemin en sens inverse (cristal, dash au-dessus de la tour, glissade le long du mur, saut de mur).
 // Dessin original, sur une grille de 320 x 200 pixels (1 pixel = 5 unités du SVG), proche du 320 x 180 du jeu.
 // Chaîne de caractères pure : pas de DOM, rien d'extérieur, même résultat à chaque appel.
 
@@ -13,7 +13,7 @@ import { madelineDefs } from './madeline.js'
 import { timeline, run, madelineWithTrail, freezeCss } from './timeline.js'
 
 const SKY = ['#04081a', '#070e26', '#0a1632', '#0e1c3e']
-const P = 6.6
+const P = 10.8
 
 // Une poutrelle d'acier : un cadre bleu foncé, des croisillons clairs.
 function girder(w, h) {
@@ -144,10 +144,10 @@ function goal() {
   return l
 }
 
-// ---------- Le parcours de Madeline ----------
+// ---------- Le parcours de Madeline : l'aller, puis le retour avec les mêmes mécaniques ----------
 function route() {
   const w = []
-  const at = (t, x, y, n, pose, hair) => w.push({ t, x, y, n, pose, hair, flip: false })
+  const at = (t, x, y, n, pose, hair, flip = false) => w.push({ t, x, y, n, pose, hair, flip })
   at(0, 30, 168, 1, 'idle', 'red')
   run(w, 0.5, 1.1, 30, 80, 168, false, 'red')
   at(1.1, 80, 168, 3, 'air', 'red') // elle saute vers la tour
@@ -164,8 +164,27 @@ function route() {
   run(w, 3.9, 4.4, 238, 256, 120, false, 'red') // elle prend la fraise
   run(w, 4.4, 5.2, 256, 300, 120, false, 'red') // et court vers la sortie
   at(5.2, 300, 120, 1, 'idle', 'red')
-  at(5.75, 30, 168, 1, 'idle', 'red') // fondu au noir : retour au départ
-  at(6.1, 30, 168, 1, 'idle', 'red')
+  // Retour : elle se retourne, saute, dashe vers le cristal, dashe au-dessus de la tour,
+  // glisse le long du mur, fait un saut de mur vers la plateforme de départ.
+  at(5.5, 300, 120, 1, 'idle', 'red', true)
+  run(w, 5.9, 6.7, 300, 236, 120, true, 'red')
+  at(6.7, 232, 120, 3, 'air', 'red', true)
+  at(6.85, 224, 108, 3, 'air', 'red', true)
+  at(6.95, 224, 108, 4, 'dash', 'white', true)
+  at(7.1, 198, 98, 4, 'air', 'cyan', true)
+  at(7.5, 152, 86, 1, 'air', 'red', true) // le cristal revient : le dash aussi
+  at(7.55, 152, 86, 4, 'dash', 'white', true)
+  at(7.7, 126, 100, 4, 'air', 'cyan', true)
+  at(8.0, 100, 104, 3, 'air', 'cyan', true) // au-dessus de la tour, loin des pointes
+  at(8.2, 90, 118, 3, 'fall', 'cyan', true)
+  at(8.3, 88, 124, 6, 'wall', 'cyan', false) // elle glisse le long du mur
+  at(9.1, 88, 152, 3, 'air', 'cyan', true) // saut de mur : elle s'éloigne du mur
+  at(9.3, 74, 150, 3, 'air', 'cyan', true)
+  at(9.55, 62, 160, 2, 'fall', 'cyan', true)
+  at(9.7, 58, 168, 2, 'run2', 'red', true) // elle atterrit : le dash revient
+  run(w, 9.9, 10.3, 58, 30, 168, true, 'red')
+  at(10.3, 30, 168, 1, 'idle', 'red', true)
+  at(10.5, 30, 168, 1, 'idle', 'red', false) // elle se retourne : le cycle reprend
   return w
 }
 
@@ -185,11 +204,9 @@ const pct = (t) => ((t / P) * 100).toFixed(3) + '%'
 
 const CSS = `${timeline(P, route())}
 .crystal{animation:crystal ${P}s steps(1,end) infinite}
-${visible('crystal', [[0, 2.65], [5.15, P]])}
+${visible('crystal', [[0, 2.65], [5.15, 7.5], [10.0, P]])}
 .berry{animation:berry ${P}s steps(1,end) infinite}
-${visible('berry', [[0, 4.4], [5.8, P]])}
-.fade{animation:fade ${P}s steps(1,end) infinite}
-@keyframes fade{0%{opacity:0}${pct(5.4)}{opacity:.3}${pct(5.5)}{opacity:.6}${pct(5.6)}{opacity:1}${pct(5.85)}{opacity:1}${pct(5.95)}{opacity:.6}${pct(6.05)}{opacity:.3}${pct(6.15)}{opacity:0}}
+${visible('berry', [[0, 4.4], [10.4, P]])}
 .bob{animation:bob 1.6s steps(1,end) infinite}
 @keyframes bob{0%{transform:translateY(0)}25%{transform:translateY(1px)}50%{transform:translateY(0)}75%{transform:translateY(-1px)}}
 .glow{animation:glow 2.4s steps(1,end) infinite}
@@ -223,7 +240,7 @@ export function celeste2Svg(at) {
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="100%" height="100%" ` +
-    `preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges"><style>${CSS}${freezeCss(at)}${at === undefined ? '' : `.crystal,.berry,.fade{animation-delay:-${at}s;animation-play-state:paused}`}</style>` +
+    `preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges"><style>${CSS}${freezeCss(at)}${at === undefined ? '' : `.crystal,.berry{animation-delay:-${at}s;animation-play-state:paused}`}</style>` +
     `<defs>${madelineDefs()}</defs><g transform="scale(5)">` +
     bandsSvg('r', SKY, 0, 200) +
     stars(rnd) +
@@ -246,7 +263,6 @@ export function celeste2Svg(at) {
     `<g class="glow">${halo(304, 108, 22, '#ffe9a0')}</g><g transform="translate(295 90)">${exit.svg()}</g>` +
     madelineWithTrail(at) +
     snow(rnd) +
-    `<rect class="fade" width="320" height="200" fill="#000" opacity="0"/>` +
     `</g></svg>`
   )
 }
