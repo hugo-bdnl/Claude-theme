@@ -1,6 +1,6 @@
 {
   "name": "hugo-themes",
-  "version": "0.1.2",
-  "description": "Plusieurs thèmes de couleurs pour l'app Claude Desktop, changeables avec /theme",
+  "version": "0.2.0",
+  "description": "Fonds d'écran animés en pixel art (Greenpath, Fog Canyon) pour l'app Claude Desktop, changeables avec /fond",
   "author": { "name": "hugo-bdnl" }
 }

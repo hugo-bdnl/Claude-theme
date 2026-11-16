@@ -6,7 +6,7 @@
     {
       "name": "hugo-themes",
       "source": "./",
-      "description": "Plusieurs thèmes de couleurs pour l'app Claude Desktop, changeables avec /theme"
+      "description": "Fonds d'écran animés en pixel art pour l'app Claude Desktop, changeables avec /fond"
     }
   ]
 }

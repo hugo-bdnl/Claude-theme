@@ -1,11 +1,19 @@
 import { greenpathSvg } from './scenes/greenpath.js'
+import { fogCanyonSvg } from './scenes/fogcanyon.js'
 
 // Les fonds disponibles : le nom de la scène, son dessin, et la "vitre" qui garde le texte lisible par-dessus.
 const SCENES = {
   greenpath: {
     title: 'Greenpath',
     scene: greenpathSvg,
+    alt: 'Greenpath : une grotte verdoyante en pixel art avec un lac et une cascade',
     glass: { blur: 8, tint: '#07130f', opacity: 0.55 },
+  },
+  fogcanyon: {
+    title: 'Fog Canyon',
+    scene: fogCanyonSvg,
+    alt: 'Fog Canyon : un canyon de brume violette où des méduses lumineuses montent',
+    glass: { blur: 8, tint: '#0a0820', opacity: 0.55 },
   },
 }
 const DEFAULT_SCENE = 'greenpath'
@@ -109,6 +117,6 @@ export function register(on) {
     const def = SCENES[e.props.scene ?? e.props.id]
     if (!def) return next(e)
     const { Svg } = $.ui.resolve(e)
-    return Svg({ isInteractive: true, alt: def.title + ' : une grotte verdoyante en pixel art avec un lac', source: def.scene() })
+    return Svg({ isInteractive: true, alt: def.alt, source: def.scene() })
   })
 }
