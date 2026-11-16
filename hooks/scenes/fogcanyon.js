@@ -104,14 +104,15 @@ function glow(rnd, color, count, x0, x1, y0, y1, r0, r1) {
   return l
 }
 
-// Boule de pissenlit rose, au repos au milieu.
+// Grande boule de pissenlit rose, duveteuse : un cœur rose, un rayonnement de pointes claires.
 function puffball() {
-  const l = new Layer(25, 25)
-  disc(l, 12, 12, 6, '#f0bcd8')
-  disc(l, 11, 11, 3, '#f8d8ea')
-  for (let k = 0; k < 20; k++) {
-    const a = (k / 20) * Math.PI * 2
-    for (let d = 7; d <= 11; d++) l.set(12 + Math.cos(a) * d, 12 + Math.sin(a) * d, d >= 10 ? '#fff0f8' : '#e8a8cc')
+  const l = new Layer(33, 33)
+  disc(l, 16, 16, 8, '#f0b0d0')
+  disc(l, 14, 14, 5, '#f8d0e4')
+  l.set(12, 12, '#ffffff')
+  for (let k = 0; k < 28; k++) {
+    const a = (k / 28) * Math.PI * 2
+    for (let d = 9; d <= 15; d++) l.set(16 + Math.cos(a) * d, 16 + Math.sin(a) * d, d >= 13 ? '#fff0f8' : '#e89cc4')
   }
   return l
 }
@@ -184,7 +185,7 @@ function jellyDefs() {
 // Bulles translucides : un disque pâle, un anneau plus clair, un reflet. Trois tailles, bleues ou roses.
 function bubbleDefs() {
   let defs = ''
-  for (const [name, r, fill, ring] of [['b4', 4, '#8cc4e4', '#cbeaf8'], ['b7', 7, '#8cc4e4', '#cbeaf8'], ['b11', 11, '#7ab0d8', '#bfe2f6'], ['p6', 6, '#e8a8d8', '#fbd8f0']]) {
+  for (const [name, r, fill, ring] of [['b4', 4, '#8cc4e4', '#cbeaf8'], ['b7', 7, '#8cc4e4', '#cbeaf8'], ['b11', 11, '#7ab0d8', '#bfe2f6'], ['p6', 6, '#e8a8d8', '#fbd8f0'], ['q9', 9, '#a89cf0', '#e0d6ff'], ['t8', 8, '#6cc8c0', '#bff4ee'], ['p10', 10, '#e8a8d8', '#fbd8f0']]) {
     const body = new Layer(r * 2 + 1, r * 2 + 1)
     const edge = new Layer(r * 2 + 1, r * 2 + 1)
     for (let y = 0; y <= r * 2; y++) {
@@ -213,13 +214,69 @@ function farTrunk(x0, y0, w) {
 // Racines fines qui pendent du plafond, avec un petit bourgeon rose au bout.
 function hangRoots(rnd) {
   const l = new Layer()
-  for (const [x0, len] of [[96, 14], [118, 24], [146, 12], [172, 20], [198, 26], [224, 16], [244, 22]]) {
+  const list = [[96, 14], [118, 24], [146, 12], [172, 20], [198, 26], [224, 16], [244, 22]]
+  list.forEach(([x0, len], i) => {
     for (let dy = 0; dy < len; dy++) l.set(x0 + Math.round(Math.sin(dy * 0.2 + x0) * 1.4), dy, '#1a1850')
     const x = x0 + Math.round(Math.sin(len * 0.2 + x0) * 1.4)
-    disc(l, x, len + 1, 1, '#ff8fb4')
-    l.set(x, len, '#ffe0ea')
-  }
+    if (i % 2) {
+      disc(l, x, len + 2, 2, '#ffb860')
+      disc(l, x, len + 2, 1, '#ffe08a')
+      l.set(x, len + 2, '#fff6c8')
+    } else {
+      disc(l, x, len + 1, 1, '#ff8fb4')
+      l.set(x, len, '#ffe0ea')
+    }
+  })
   return l
+}
+
+// Colonnade d'arches violettes très pâle au fond (salle des Carcasses de la Défense) : décor lointain, au centre.
+// Piliers en rectangles (légers), arcs en pixels.
+function colonnade() {
+  const l = new Layer()
+  let pillars = ''
+  for (const cx of [98, 130, 162, 194, 226]) {
+    pillars += `<rect x="${cx - 11}" y="104" width="2" height="84"/><rect x="${cx + 9}" y="104" width="2" height="84"/>`
+    for (let a = 0; a <= 180; a += 4) {
+      const x = cx + Math.cos((a * Math.PI) / 180) * 11
+      const y = 104 - Math.sin((a * Math.PI) / 180) * 11
+      l.set(x, y, '#3a3590')
+      l.set(x, y - 1, '#3a3590')
+    }
+  }
+  return `<g fill="#3a3590">${pillars}<rect x="86" y="186" width="154" height="1"/></g>` + l.svg()
+}
+
+// Un halo : trois ellipses emboîtées de plus en plus claires, à poser sous une lueur.
+function halo(cx, cy, r, color) {
+  return [[1, 0.06], [0.66, 0.1], [0.36, 0.16]]
+    .map(([k, op]) => `<ellipse cx="${cx}" cy="${cy}" rx="${Math.round(r * k)}" ry="${Math.round(r * k)}" fill="${color}" opacity="${op}"/>`)
+    .join('')
+}
+
+// Lanterne sur pied : une petite méduse blanche au cœur orange, plantée dans le sol (image de la descente du canyon).
+function lampLayer() {
+  const l = new Layer(11, 21)
+  for (let y = 0; y < 7; y++) {
+    const t = (6 - y) / 7
+    const half = 4.5 * Math.sqrt(Math.max(0, 1 - t * t))
+    for (let x = Math.round(5 - half); x <= Math.round(5 + half); x++) l.set(x, y, x === Math.round(5 - half) || x === Math.round(5 + half) || y === 0 ? '#d4c4f2' : '#f7f0ff')
+  }
+  for (const [x, y] of [[4, 3], [5, 3], [6, 3], [5, 2], [5, 4]]) l.set(x, y, '#ffc268')
+  l.set(5, 3, '#fff4b0')
+  l.set(3, 1, '#ffffff')
+  for (let y = 7; y < 18; y++) {
+    l.set(5, y, '#a99fe0')
+    l.set(6, y, '#7e74c0')
+  }
+  for (const [x, y] of [[3, 18], [4, 18], [7, 18], [8, 18], [2, 19], [9, 19], [4, 17], [7, 17]]) l.set(x, y, '#7e74c0')
+  return l
+}
+
+// Hauteur du premier pixel plein d'un rocher à une colonne donnée.
+function topAt(core, x) {
+  for (let y = 0; y < H; y++) if (core.get(x, y)) return y
+  return H - 1
 }
 
 // Une méduse qui monte : trois mouvements emboîtés (montée lente, dérive de côté, battement irrégulier),
@@ -290,6 +347,9 @@ const STYLE = `
 .t1{animation-duration:4.3s}
 .t2{animation-duration:2.6s}
 @keyframes tw{0%{opacity:1}45%{opacity:.25}70%{opacity:1}}
+.lamp{animation:lamp 2.8s steps(1,end) infinite}
+.lamp.b{animation-delay:-1.4s}
+@keyframes lamp{0%{opacity:1}50%{opacity:.7}}
 .puff{animation:puff 12s steps(1,end) infinite}
 @keyframes puff{0%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(2px,0)}75%{transform:translate(1px,1px)}}
 .head{animation:breathe 3.2s steps(1,end) infinite}
@@ -299,11 +359,11 @@ const STYLE = `
 export function fogCanyonSvg() {
   const rnd = mulberry32(31)
   const left = island(rnd, [[4, 12, 24], [30, 4, 16], [2, 176, 22], [16, 194, 18]],
-    { moss: 200, grass: 4, bulbs: 3, drips: 4 })
+    { moss: 200, grass: 9, bulbs: 3, drips: 4 })
   const right = island(rnd, [[314, 50, 14], [302, 40, 10]],
-    { moss: 70, grass: 2, bulbs: 2, drips: 2 })
+    { moss: 70, grass: 4, bulbs: 2, drips: 2 })
   const ledge = island(rnd, [[300, 190, 26], [278, 196, 20], [314, 176, 18]],
-    { moss: 150, grass: 5, bulbs: 4, drips: 0 })
+    { moss: 150, grass: 11, bulbs: 4, drips: 0 })
   const bark = trunk(rnd)
   const farA = island(rnd, [[118, 62, 13], [132, 58, 9], [106, 66, 8]], { moss: 50, grass: 2, bulbs: 1, drips: 2 })
   const farB = island(rnd, [[196, 104, 10], [208, 100, 7]], { moss: 30, grass: 1, bulbs: 1, drips: 1 })
@@ -315,6 +375,13 @@ export function fogCanyonSvg() {
   const mist = glow(rnd, '#a89cf0', 22, 0, W, 60, 170, 8, 15)
   const mistB = glow(rnd, '#a89cf0', 22, 0, W, 90, 190, 8, 15)
   const puff = puffball()
+  const arches = colonnade()
+  const lampSprite = lampLayer()
+  const lampSpots = [[left.core, 13], [ledge.core, 288], [ledge.core, 304]].map(([core, x]) => [x, topAt(core, x + 5)])
+  const lamps = lampSpots
+    .map(([x, y], i) => `<g class="lamp${i === 1 ? ' b' : ''}">${halo(x + 5, y - 15, 16, '#ffb468')}</g><g transform="translate(${x} ${y - 19})">${lampSprite.svg()}</g>`)
+    .join('')
+  const pinkHalo = (x, y) => halo(x + 16, y + 16, 22, '#f0bcd8')
 
   const knight = knightLayer()
   const head = new Layer(knight.w, KNIGHT_HEAD_ROWS)
@@ -328,12 +395,12 @@ export function fogCanyonSvg() {
   const farJellies = [96, 150, 202].map((x) => jelly(rnd, 'S', x + rnd() * 10, true)).join('')
   const centerBubbles = [92, 128, 170, 214, 188].map((x) => '<g opacity=".4">' + bubble(rnd, 'b4', x + rnd() * 12) + '</g>').join('')
   const smallBubbles = Array.from({ length: 8 }, (_, i) => bubble(rnd, i % 4 === 3 ? 'p6' : 'b4', i % 2 ? 258 + rnd() * 34 : 4 + rnd() * 36)).join('')
-  const bigBubbles = [bubble(rnd, 'b11', 6), bubble(rnd, 'b11', 262), bubble(rnd, 'b7', 22), bubble(rnd, 'b7', 36), bubble(rnd, 'b7', 270), bubble(rnd, 'p6', 44)].join('')
+  const bigBubbles = [bubble(rnd, 'b11', 6), bubble(rnd, 'b11', 262), bubble(rnd, 'b7', 22), bubble(rnd, 'b7', 36), bubble(rnd, 'b7', 270), bubble(rnd, 'p6', 44), bubble(rnd, 'q9', 28), bubble(rnd, 'p10', 292), bubble(rnd, 't8', 12), bubble(rnd, 'q9', 276)].join('')
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="100%" height="100%" ` +
     `preserveAspectRatio="xMidYMax slice" shape-rendering="crispEdges"><style>${STYLE}</style>` +
-    `<defs>${jellyDefs()}${bubbleDefs()}</defs><g transform="scale(5)">` +
+    `<defs>${jellyDefs()}${bubbleDefs()}<g id="pf">${puff.svg()}</g></defs><g transform="scale(5)">` +
     bandsSvg('f', BANDS, 0, H) +
     `<g opacity=".1">${haze.svg()}</g>` +
     `<g class="shaft"><polygon points="104,0 150,0 220,190 160,190" fill="#d8ccff" opacity=".07"/></g>` +
@@ -343,6 +410,7 @@ export function fogCanyonSvg() {
     `<g opacity=".3">${trunkA.svg()}${trunkB.svg()}</g>` +
     `<g opacity=".3">${farA.svg()}${farB.svg()}${farC.svg()}</g>` +
     farJellies +
+    `<g opacity=".2">${arches}</g>` +
     centerBubbles +
     `<g opacity=".7">${centerRoots.svg()}</g>` +
     `<g class="fogA" opacity=".06">${mist.svg()}</g>` +
@@ -350,11 +418,15 @@ export function fogCanyonSvg() {
     smallBubbles +
     right.svg() +
     mediums +
-    `<g class="puff" transform="translate(262 98)">${puff.svg()}</g>` +
+    `<g transform="translate(258 94)"><g class="puff"><use href="#pf"/></g></g>` +
+    pinkHalo(258, 94) +
+    `<g transform="translate(24 112)"><g class="puff"><use href="#pf"/></g></g>` +
+    pinkHalo(24, 112) +
     left.svg() +
     `<g class="fogB" opacity=".06">${mistB.svg()}</g>` +
     larges +
     ledge.svg() +
+    lamps +
     `<g transform="translate(264 151)" opacity=".5">${knightRim.svg()}</g>` +
     `<g transform="translate(264 151)">${body.svg()}<g class="head">${head.svg()}</g></g>` +
     bigBubbles +
