@@ -19,7 +19,7 @@ const SCENES = {
   celeste: {
     title: 'Celeste',
     scene: celesteSvg,
-    alt: 'Celeste : la Cité oubliée de nuit, avec Madeline qui traverse l'écran en double dash',
+    alt: "Celeste : la Cité oubliée de nuit, avec Madeline qui traverse l'écran en double dash",
     glass: { blur: 8, tint: '#0a0a24', opacity: 0.5 },
   },
 }

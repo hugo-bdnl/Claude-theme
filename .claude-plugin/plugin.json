@@ -1,6 +1,6 @@
 {
   "name": "hugo-themes",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Fonds d'écran animés en pixel art (Greenpath, Fog Canyon, Celeste) pour l'app Claude Desktop, changeables avec /fond",
   "author": { "name": "hugo-bdnl" }
 }
