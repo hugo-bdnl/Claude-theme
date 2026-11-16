@@ -1,0 +1,6 @@
+{
+  "name": "hugo-themes",
+  "version": "0.1.0",
+  "description": "Plusieurs thèmes de couleurs pour l'app Claude Desktop, changeables avec /theme",
+  "author": { "name": "hugo-bdnl" }
+}

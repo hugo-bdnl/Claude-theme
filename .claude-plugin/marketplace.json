@@ -1,0 +1,12 @@
+{
+  "name": "hugo-themes",
+  "description": "Thèmes de couleurs personnels pour l'app Claude Desktop",
+  "owner": { "name": "hugo-bdnl" },
+  "plugins": [
+    {
+      "name": "hugo-themes",
+      "source": "./",
+      "description": "Plusieurs thèmes de couleurs pour l'app Claude Desktop, changeables avec /theme"
+    }
+  ]
+}
