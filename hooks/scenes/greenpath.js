@@ -133,10 +133,10 @@ function farShapes(rnd, color, light, y0, y1) {
 }
 
 const groundTop = (x) => {
-  if (x >= 226) return 150
-  if (x >= 196) return 150 + (226 - x) * 0.55
-  if (x <= 60) return 158
-  if (x <= 92) return 158 + (x - 60) * 0.25
+  if (x >= 200) return 150
+  if (x >= 140) return 150 + (200 - x) * 0.27
+  if (x <= 8) return 160
+  if (x <= 14) return 160 + (x - 8)
   return Infinity
 }
 
@@ -177,8 +177,71 @@ function walls(rnd) {
   }
   for (let x = 0; x < W; x++) for (let y = 0; y < ceil(x); y++) l.set(x, y, DARK)
   const inside = (x, y) => x < wl(y) + 2 || x > W - wr(y) - 2 || y < ceil(x) + 2
-  foliage(l, rnd, inside, { x0: 0, x1: W, y0: 0, y1: 160 }, 250, 2, 5, FOLIAGE, GLINTS, 0.3)
+  foliage(l, rnd, inside, { x0: 0, x1: W, y0: 0, y1: 160 }, 230, 2, 5, FOLIAGE, GLINTS, 0.3)
   return l
+}
+
+const FALL = { x0: 64, x1: 78, top: 62 }
+
+// Surplomb de roche d'où tombe la cascade, qui sort de la paroi gauche.
+function ledge(rnd) {
+  const l = new Layer()
+  for (let x = 22; x <= FALL.x1 + 3; x++) {
+    const thick = Math.max(4, Math.round(14 - (x - 22) / 6))
+    for (let y = FALL.top - 3; y < FALL.top - 3 + thick; y++) l.set(x, y, DARK)
+    l.set(x, FALL.top - 3, '#1c4d40')
+  }
+  const onTop = (x, y) => x >= 24 && x <= FALL.x1 + 2 && y < FALL.top && y > FALL.top - 8
+  foliage(l, rnd, onTop, { x0: 22, x1: FALL.x1 + 3, y0: FALL.top - 8, y1: FALL.top }, 22, 1, 3, FOLIAGE, GLINTS, 0.6)
+  return l
+}
+
+// Cascade : un ruban d'eau aux bords en escalier, des traînées claires qui descendent, de l'écume en bas.
+function waterfall(rnd) {
+  const { x0, x1, top } = FALL
+  const bot = WATER_Y
+  const jag = (y, k) => Math.round(Math.sin(y * 0.21 + k) * 1.2 + Math.sin(y * 0.07 + k * 3))
+  const left = (y) => x0 + jag(y, 0)
+  const right = (y) => x1 + jag(y, 5)
+  const base = new Layer()
+  for (let y = top; y < bot; y++) {
+    for (let x = left(y); x <= right(y); x++) base.set(x, y, '#3aa8a2')
+    base.set(left(y), y, '#1f7478')
+    base.set(right(y), y, '#1f7478')
+    const mid = Math.round((left(y) + right(y)) / 2) + (y % 40 < 20 ? 0 : 1)
+    base.set(mid, y, '#6fd5c6')
+    base.set(mid - 1, y, '#58c4b6')
+  }
+  const pts = []
+  for (let y = top; y <= bot; y += 2) pts.push(`${left(y)},${y}`)
+  for (let y = bot; y >= top; y -= 2) pts.push(`${right(y) + 1},${y}`)
+  // Traînées : une tuile de 24 rangées qui se répète, déplacée par paliers pour donner la chute.
+  const tile = new Layer(x1 - x0 + 8, 24)
+  for (let k = 0; k < 9; k++) {
+    const x = 1 + Math.floor(rnd() * (x1 - x0 + 4))
+    const y = Math.floor(rnd() * 24)
+    const len = 3 + Math.floor(rnd() * 5)
+    const c = ['#d3fff4', '#8fe8d8', '#1f7478'][k % 3]
+    for (let i = 0; i < len; i++) tile.set(x, (y + i) % 24, c)
+  }
+  const uses = []
+  for (let y = top - 24; y < bot; y += 24) uses.push(`<use href="#wft" x="${x0 - 3}" y="${y}"/>`)
+  // Écume au pied : deux images qui alternent, et un voile de brume.
+  const foamA = new Layer()
+  const foamB = new Layer()
+  for (let x = x0 - 6; x <= x1 + 6; x++) {
+    if ((x + 0) % 3) foamA.set(x, bot - 1, '#e9fff8')
+    if ((x + 1) % 3) foamB.set(x, bot - 1, '#e9fff8')
+    if (rnd() < 0.5) foamA.set(x, bot - 2, '#9ff7e2')
+    if (rnd() < 0.5) foamB.set(x, bot - 3, '#9ff7e2')
+  }
+  return (
+    base.svg() +
+    `<defs><clipPath id="wfc"><polygon points="${pts.join(' ')}"/></clipPath><g id="wft">${tile.svg()}</g></defs>` +
+    `<g clip-path="url(#wfc)"><g class="fall">${uses.join('')}</g></g>` +
+    `<g class="foamA">${foamA.svg()}</g><g class="foamB">${foamB.svg()}</g>` +
+    `<g class="mist" fill="#cffff6"><rect x="${x0 - 12}" y="${bot - 4}" width="${x1 - x0 + 24}" height="4" opacity=".1"/><rect x="${x0 - 8}" y="${bot - 8}" width="${x1 - x0 + 16}" height="4" opacity=".07"/><rect x="${x0 - 4}" y="${bot - 12}" width="${x1 - x0 + 8}" height="4" opacity=".04"/></g>`
+  )
 }
 
 // Lianes de feuilles qui pendent du plafond ; deux calques qui oscillent d'un pixel, en décalé.
@@ -208,18 +271,18 @@ function pier() {
   const l = new Layer()
   const iron = '#0b1822'
   const edge = '#2d5266'
-  for (let x = 56; x <= 150; x++) {
+  for (let x = 96; x <= 168; x++) {
     l.set(x, 160, edge)
     l.set(x, 161, iron)
     l.set(x, 162, iron)
     l.set(x, 153, x % 2 ? iron : edge)
   }
-  for (let x = 62; x <= 150; x += 11) {
+  for (let x = 102; x <= 168; x += 11) {
     for (let y = 154; y < 160; y++) l.set(x, y, iron)
     l.set(x, 152, edge)
     for (let y = 163; y < 176; y++) l.set(x, y, '#0a141c')
   }
-  for (let x = 67; x <= 145; x += 11) {
+  for (let x = 107; x <= 163; x += 11) {
     for (let k = 0; k < 4; k++) l.set(x + (k % 2), 154 + k, iron)
   }
   return l
@@ -230,7 +293,7 @@ const WATER_BANDS = ['#0a3a40', '#08303a', '#062631', '#051c27', '#031320']
 
 function surfaceLine(r) {
   const l = new Layer()
-  for (let x = 90; x < 200; x++) {
+  for (let x = 14; x < 142; x++) {
     l.set(x, WATER_Y, r() < 0.12 ? '#e9fff8' : '#9ff7e2')
     l.set(x, WATER_Y - 1, '#3fb5a4')
     l.set(x, WATER_Y + 1, '#2f8f86')
@@ -243,7 +306,7 @@ function ripples(seed) {
   const r = mulberry32(seed)
   for (const y of [170, 174, 178, 183, 189, 195]) {
     for (let k = 0; k < 7; k++) {
-      const x = 90 + Math.floor(r() * 100)
+      const x = 14 + Math.floor(r() * 118)
       const len = 4 + Math.floor(r() * 9)
       for (let i = 0; i < len; i++) l.set(x + i, y, y < 180 ? '#2a8f8a' : '#1b6a6c')
     }
@@ -405,6 +468,14 @@ const STYLE = `
 .shaft.b{animation-delay:-3s}
 .shaft.c{animation-delay:-6s}
 @keyframes shaft{0%{opacity:1}33%{opacity:.6}66%{opacity:.82}}
+.fall{animation:fall 1.2s steps(6,end) infinite}
+@keyframes fall{from{transform:translateY(0)}to{transform:translateY(24px)}}
+.foamA{animation:flipA 0.8s steps(1,end) infinite}
+.foamB{animation:flipB 0.8s steps(1,end) infinite}
+@keyframes flipA{0%{opacity:1}50%{opacity:0}}
+@keyframes flipB{0%{opacity:0}50%{opacity:1}}
+.mist{animation:mist 3s steps(1,end) infinite}
+@keyframes mist{0%{opacity:1}50%{opacity:.6}}
 .shine{animation:shine 3s steps(1,end) infinite}
 @keyframes shine{0%{opacity:1}50%{opacity:.7}}
 @media (prefers-reduced-motion: reduce){*{animation:none !important}}`
@@ -423,6 +494,8 @@ export function greenpathSvg() {
   const wall = walls(rnd)
   const s0 = strands(rnd, 0)
   const s1 = strands(rnd, 1)
+  const lip = ledge(rnd)
+  const fall = waterfall(rnd)
 
   const head = new Layer(18, 14)
   const body = new Layer(18, 24)
@@ -460,6 +533,8 @@ export function greenpathSvg() {
     `<g transform="translate(276 126)" opacity=".55">${knightRim.svg()}</g>` +
     `<g transform="translate(276 126)">${body.svg()}<g class="head">${head.svg()}</g></g>` +
     wall.svg() +
+    lip.svg() +
+    fall +
     `<g class="v0">${s0.svg()}</g><g class="v1">${s1.svg()}</g>` +
     fireflies() +
     `</g></svg>`
