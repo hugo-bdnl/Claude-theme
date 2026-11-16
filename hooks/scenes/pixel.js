@@ -91,6 +91,28 @@ export function bandsSvg(id, bands, y0, y1) {
   return `<defs>${defs}</defs>${out}`
 }
 
+// Un amas de feuillage : des disques qui se recouvrent, un éclat en haut à gauche, quelques points clairs.
+// region(x, y) dit où l'on a le droit de dessiner ; dens règle la densité des éclats et des points.
+export function foliage(layer, rnd, region, box, count, rMin, rMax, tones, glints, dens = 1) {
+  const pts = []
+  for (let i = 0; i < count * 4 && pts.length < count; i++) {
+    const x = box.x0 + rnd() * (box.x1 - box.x0)
+    const y = box.y0 + rnd() * (box.y1 - box.y0)
+    if (region(x, y)) pts.push([Math.round(x), Math.round(y), rMin + Math.floor(rnd() * (rMax - rMin + 1))])
+  }
+  pts.sort((a, b) => a[1] - b[1])
+  for (const [x, y, r] of pts) {
+    const tone = tones[Math.floor(rnd() * tones.length)]
+    disc(layer, x, y, r, tone.base)
+    for (let dy = -r; dy <= 0; dy++) {
+      for (let dx = -r; dx <= 0; dx++) {
+        if (dx * dx + dy * dy <= r * r && dx + dy < -r * 0.7 && rnd() < 0.55 * dens) layer.set(x + dx, y + dy, tone.light)
+      }
+    }
+    if (rnd() < 0.5 * dens) layer.set(x + Math.floor(rnd() * r), y + Math.floor(rnd() * r), glints[Math.floor(rnd() * glints.length)])
+  }
+}
+
 export function outlineOf(layer, color) {
   const out = new Layer(layer.w, layer.h)
   for (let y = 0; y < layer.h; y++) {
