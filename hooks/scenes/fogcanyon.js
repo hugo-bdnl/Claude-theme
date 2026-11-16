@@ -4,6 +4,8 @@
 // chacune à son rythme, de façon irrégulière.
 // Dessin original (rien n'est copié des images du jeu), sur une grille de 320 x 200 pixels (1 pixel = 5 unités du SVG).
 // Les animations avancent par paliers (steps) pour garder l'effet pixel.
+// RÈGLE : aucun sujet au centre (le chat le cache). Méduses, bulles, rochers et personnage restent sur les deux bords
+// (gauche : x < 50, droite : x > 255, sur la grille de 320) ; le centre ne garde que le fond, la brume et la lumière.
 // Chaîne de caractères pure : pas de DOM, rien d'extérieur, même résultat à chaque appel.
 
 import { W, H, Layer, disc, mulberry32, bandsSvg, outlineOf, knightLayer } from './pixel.js'
@@ -275,14 +277,13 @@ const STYLE = `
 
 export function fogCanyonSvg() {
   const rnd = mulberry32(31)
-  const left = island(rnd, [[34, 40, 40], [66, 30, 30], [90, 20, 18], [14, 90, 34], [40, 76, 26], [70, 64, 18], [12, 140, 30], [20, 176, 34], [44, 188, 22]],
-    { moss: 520, grass: 8, bulbs: 5, drips: 7 })
-  const right = island(rnd, [[292, 66, 26], [312, 78, 22], [268, 62, 14], [304, 54, 18], [284, 82, 14]],
-    { moss: 210, grass: 4, bulbs: 3, drips: 3 })
-  const mound = island(rnd, [[150, 192, 36], [118, 198, 28], [182, 198, 30], [150, 176, 20], [134, 184, 18]],
-    { moss: 240, grass: 8, bulbs: 6, drips: 0 })
+  const left = island(rnd, [[4, 12, 24], [30, 4, 16], [2, 176, 22], [16, 194, 18]],
+    { moss: 200, grass: 4, bulbs: 3, drips: 4 })
+  const right = island(rnd, [[314, 50, 14], [302, 40, 10]],
+    { moss: 70, grass: 2, bulbs: 2, drips: 2 })
+  const ledge = island(rnd, [[300, 190, 26], [278, 196, 20], [314, 176, 18]],
+    { moss: 150, grass: 5, bulbs: 4, drips: 0 })
   const bark = trunk(rnd)
-  const postLayer = posts()
   const haze = glow(rnd, '#e08ad8', 14, 160, 320, 150, 200, 8, 16)
   const mist = glow(rnd, '#a89cf0', 22, 0, W, 60, 170, 8, 15)
   const mistB = glow(rnd, '#a89cf0', 22, 0, W, 90, 190, 8, 15)
@@ -294,11 +295,11 @@ export function fogCanyonSvg() {
   for (let y = 0; y < 24; y++) for (let x = 0; x < 18; x++) (y < 14 ? head : body).set(x, y, knight.get(x, y))
   const knightRim = outlineOf(knight, '#c8bcff')
 
-  const smalls = [100, 160, 200, 232, 118, 230].map((x) => jelly(rnd, 'S', x + rnd() * 20)).join('')
-  const mediums = [76, 128, 196, 250].map((x) => jelly(rnd, 'M', x + rnd() * 16)).join('')
-  const larges = [96, 190].map((x) => jelly(rnd, 'L', x + rnd() * 12)).join('')
-  const smallBubbles = Array.from({ length: 8 }, (_, i) => bubble(rnd, i % 4 === 3 ? 'p6' : 'b4', 8 + rnd() * 300)).join('')
-  const bigBubbles = [bubble(rnd, 'b11', 6), bubble(rnd, 'b11', 232), bubble(rnd, 'b7', 24), bubble(rnd, 'b7', 150), bubble(rnd, 'b7', 270), bubble(rnd, 'p6', 90)].join('')
+  const smalls = [4, 26, 258, 290, 272].map((x) => jelly(rnd, 'S', x + rnd() * 6)).join('')
+  const mediums = [6, 28, 252, 280].map((x) => jelly(rnd, 'M', x + rnd() * 6)).join('')
+  const larges = [0, 250].map((x) => jelly(rnd, 'L', x + rnd() * 6)).join('')
+  const smallBubbles = Array.from({ length: 8 }, (_, i) => bubble(rnd, i % 4 === 3 ? 'p6' : 'b4', i % 2 ? 258 + rnd() * 34 : 4 + rnd() * 36)).join('')
+  const bigBubbles = [bubble(rnd, 'b11', 6), bubble(rnd, 'b11', 262), bubble(rnd, 'b7', 22), bubble(rnd, 'b7', 36), bubble(rnd, 'b7', 270), bubble(rnd, 'p6', 44)].join('')
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="100%" height="100%" ` +
@@ -315,14 +316,13 @@ export function fogCanyonSvg() {
     smallBubbles +
     right.svg() +
     mediums +
-    `<g class="puff" transform="translate(228 96)">${puff.svg()}</g>` +
+    `<g class="puff" transform="translate(262 98)">${puff.svg()}</g>` +
     left.svg() +
     `<g class="fogB" opacity=".06">${mistB.svg()}</g>` +
     larges +
-    mound.svg() +
-    postLayer.svg() +
-    `<g transform="translate(142 134)" opacity=".5">${knightRim.svg()}</g>` +
-    `<g transform="translate(142 134)">${body.svg()}<g class="head">${head.svg()}</g></g>` +
+    ledge.svg() +
+    `<g transform="translate(266 152)" opacity=".5">${knightRim.svg()}</g>` +
+    `<g transform="translate(266 152)">${body.svg()}<g class="head">${head.svg()}</g></g>` +
     bigBubbles +
     sparkles(rnd) +
     `</g></svg>`
