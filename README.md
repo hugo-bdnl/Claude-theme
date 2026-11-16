@@ -31,9 +31,10 @@ puis l'ajouter à `SCENES` dans `hooks/register.js`.
 
 ## Règles de conception des fonds
 
-- **Rien au centre.** Dans l'app, le chat occupe le centre de la fenêtre et la barre latérale le côté gauche : un sujet placé au milieu est caché.
-  Les sujets (personnage, méduses, bulles, lac, cascade, lampadaire…) vont sur les bords (sur la grille de 320 : gauche x < 50, droite x > 255).
-  Le centre ne contient que du fond : dégradé, brume, faisceaux de lumière, petites étincelles.
+- **Pas de sujet principal au centre.** Dans l'app, le chat occupe le centre de la fenêtre et la barre latérale le côté gauche : un sujet placé au milieu est caché.
+  Les sujets principaux (personnage, grandes méduses, lac, cascade, lampadaire…) vont sur les bords (sur la grille de 320 : gauche x < 50, droite x > 255).
+- **Mais pas un centre vide.** Le centre reçoit du décor secondaire, discret et peu contrasté (opacité 30 à 40 %) : silhouettes lointaines pâles
+  (petits rochers, troncs), racines au plafond, petites méduses ou bulles éloignées, étincelles, brume, faisceaux de lumière.
 - **Décor discret sur les côtés.** Les rochers et masses sombres restent petits et collés aux coins : ils ne doivent pas manger l'écran.
 - **Poids du fichier.** Un fond est un SVG de moins de 131 072 caractères ; viser moins de 110 000.
 - `greenpath` date d'avant ces règles (son lac est étendu sur la gauche) et n'a volontairement pas été modifié ; `fogcanyon` les suit.

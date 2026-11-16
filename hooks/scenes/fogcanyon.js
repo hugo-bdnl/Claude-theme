@@ -8,7 +8,7 @@
 // (gauche : x < 50, droite : x > 255, sur la grille de 320) ; le centre ne garde que le fond, la brume et la lumière.
 // Chaîne de caractères pure : pas de DOM, rien d'extérieur, même résultat à chaque appel.
 
-import { W, H, Layer, disc, mulberry32, bandsSvg, outlineOf, knightLayer } from './pixel.js'
+import { W, H, Layer, disc, mulberry32, bandsSvg, outlineOf, knightLayer, KNIGHT_HEAD_ROWS } from './pixel.js'
 
 const BANDS = ['#1c2160', '#262c78', '#323688', '#403f9a', '#5148aa', '#6652b4']
 const CORE = '#0a0720'
@@ -202,9 +202,29 @@ function bubbleDefs() {
   return defs
 }
 
+// Décor lointain au centre : formes pâles et peu contrastées, jamais le sujet principal.
+// Tronc bleuté très fondu dans la brume.
+function farTrunk(x0, y0, w) {
+  const l = new Layer()
+  for (let y = y0; y < H; y++) for (let x = x0; x < x0 + w + Math.round(Math.sin(y * 0.2) * 1.2); x++) l.set(x, y, '#2a2a78')
+  return l
+}
+
+// Racines fines qui pendent du plafond, avec un petit bourgeon rose au bout.
+function hangRoots(rnd) {
+  const l = new Layer()
+  for (const [x0, len] of [[96, 14], [118, 24], [146, 12], [172, 20], [198, 26], [224, 16], [244, 22]]) {
+    for (let dy = 0; dy < len; dy++) l.set(x0 + Math.round(Math.sin(dy * 0.2 + x0) * 1.4), dy, '#1a1850')
+    const x = x0 + Math.round(Math.sin(len * 0.2 + x0) * 1.4)
+    disc(l, x, len + 1, 1, '#ff8fb4')
+    l.set(x, len, '#ffe0ea')
+  }
+  return l
+}
+
 // Une méduse qui monte : trois mouvements emboîtés (montée lente, dérive de côté, battement irrégulier),
 // chacun avec sa propre durée, donc jamais deux méduses au même pas.
-function jelly(rnd, type, x) {
+function jelly(rnd, type, x, far = false) {
   const pulse = (2.6 + rnd() * 2.4).toFixed(2)
   const lag = -(rnd() * 60).toFixed(1)
   const dur = type === 'L' ? 55 + rnd() * 20 : type === 'M' ? 65 + rnd() * 20 : 75 + rnd() * 20
@@ -215,9 +235,10 @@ function jelly(rnd, type, x) {
   return (
     `<g transform="translate(${Math.round(x)} 214)"><g class="rise" style="animation-duration:${dur.toFixed(1)}s;animation-delay:${lag}s">` +
     `<g class="${sway}" style="animation-duration:${swayDur}s;animation-delay:${swayLag}s">` +
+    (far ? '<g opacity=".4" transform="scale(.55)">' : '<g>') +
     `<use href="#j${type}h"/><g class="pulse" style="${p}">` +
     `<use href="#j${type}a" class="fa" style="${p}"/><use href="#j${type}b" class="fb" style="${p}"/>` +
-    `</g></g></g></g>`
+    `</g></g></g></g></g>`
   )
 }
 
@@ -234,7 +255,7 @@ function bubble(rnd, name, x) {
 
 function sparkles(rnd) {
   let out = ''
-  for (let i = 0; i < 34; i++) {
+  for (let i = 0; i < 52; i++) {
     const x = Math.round(rnd() * W)
     const y = Math.round(rnd() * (H - 20))
     out += `<path class="tw t${i % 3}" style="animation-delay:-${(rnd() * 6).toFixed(1)}s" fill="${SPARKS[i % 3]}" d="M${x} ${y}h1v1h-1z"/>`
@@ -284,20 +305,28 @@ export function fogCanyonSvg() {
   const ledge = island(rnd, [[300, 190, 26], [278, 196, 20], [314, 176, 18]],
     { moss: 150, grass: 5, bulbs: 4, drips: 0 })
   const bark = trunk(rnd)
+  const farA = island(rnd, [[118, 62, 13], [132, 58, 9], [106, 66, 8]], { moss: 50, grass: 2, bulbs: 1, drips: 2 })
+  const farB = island(rnd, [[196, 104, 10], [208, 100, 7]], { moss: 30, grass: 1, bulbs: 1, drips: 1 })
+  const farC = island(rnd, [[152, 138, 9], [163, 135, 6]], { moss: 22, grass: 1, bulbs: 1, drips: 1 })
+  const trunkA = farTrunk(138, 88, 9)
+  const trunkB = farTrunk(204, 126, 7)
+  const centerRoots = hangRoots(rnd)
   const haze = glow(rnd, '#e08ad8', 14, 160, 320, 150, 200, 8, 16)
   const mist = glow(rnd, '#a89cf0', 22, 0, W, 60, 170, 8, 15)
   const mistB = glow(rnd, '#a89cf0', 22, 0, W, 90, 190, 8, 15)
   const puff = puffball()
 
   const knight = knightLayer()
-  const head = new Layer(18, 14)
-  const body = new Layer(18, 24)
-  for (let y = 0; y < 24; y++) for (let x = 0; x < 18; x++) (y < 14 ? head : body).set(x, y, knight.get(x, y))
+  const head = new Layer(knight.w, KNIGHT_HEAD_ROWS)
+  const body = new Layer(knight.w, knight.h)
+  for (let y = 0; y < knight.h; y++) for (let x = 0; x < knight.w; x++) (y < KNIGHT_HEAD_ROWS ? head : body).set(x, y, knight.get(x, y))
   const knightRim = outlineOf(knight, '#c8bcff')
 
   const smalls = [4, 26, 258, 290, 272].map((x) => jelly(rnd, 'S', x + rnd() * 6)).join('')
   const mediums = [6, 28, 252, 280].map((x) => jelly(rnd, 'M', x + rnd() * 6)).join('')
   const larges = [0, 250].map((x) => jelly(rnd, 'L', x + rnd() * 6)).join('')
+  const farJellies = [96, 150, 202].map((x) => jelly(rnd, 'S', x + rnd() * 10, true)).join('')
+  const centerBubbles = [92, 128, 170, 214, 188].map((x) => '<g opacity=".4">' + bubble(rnd, 'b4', x + rnd() * 12) + '</g>').join('')
   const smallBubbles = Array.from({ length: 8 }, (_, i) => bubble(rnd, i % 4 === 3 ? 'p6' : 'b4', i % 2 ? 258 + rnd() * 34 : 4 + rnd() * 36)).join('')
   const bigBubbles = [bubble(rnd, 'b11', 6), bubble(rnd, 'b11', 262), bubble(rnd, 'b7', 22), bubble(rnd, 'b7', 36), bubble(rnd, 'b7', 270), bubble(rnd, 'p6', 44)].join('')
 
@@ -311,6 +340,11 @@ export function fogCanyonSvg() {
     `<g class="shaft b"><polygon points="196,0 224,0 270,190 236,190" fill="#d8ccff" opacity=".05"/></g>` +
     `<g class="shaft c"><polygon points="50,0 78,0 120,190 88,190" fill="#d8ccff" opacity=".05"/></g>` +
     bark.svg() +
+    `<g opacity=".3">${trunkA.svg()}${trunkB.svg()}</g>` +
+    `<g opacity=".3">${farA.svg()}${farB.svg()}${farC.svg()}</g>` +
+    farJellies +
+    centerBubbles +
+    `<g opacity=".7">${centerRoots.svg()}</g>` +
     `<g class="fogA" opacity=".06">${mist.svg()}</g>` +
     smalls +
     smallBubbles +
@@ -321,8 +355,8 @@ export function fogCanyonSvg() {
     `<g class="fogB" opacity=".06">${mistB.svg()}</g>` +
     larges +
     ledge.svg() +
-    `<g transform="translate(266 152)" opacity=".5">${knightRim.svg()}</g>` +
-    `<g transform="translate(266 152)">${body.svg()}<g class="head">${head.svg()}</g></g>` +
+    `<g transform="translate(264 151)" opacity=".5">${knightRim.svg()}</g>` +
+    `<g transform="translate(264 151)">${body.svg()}<g class="head">${head.svg()}</g></g>` +
     bigBubbles +
     sparkles(rnd) +
     `</g></svg>`

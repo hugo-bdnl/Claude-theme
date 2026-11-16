@@ -124,46 +124,69 @@ export function outlineOf(layer, color) {
   return out
 }
 
-// Le petit chevalier à la grosse tête blanche : très grande tête, longues cornes recourbées, yeux ronds, cape rayée, clou.
+// Le petit chevalier, d'après les modèles du jeu : tête très large et plate dessus, grandes cornes en arc dont le bout
+// se recourbe vers l'intérieur, grands yeux ovales bas, petite cape bleu-gris rayée au bas dentelé, jambes courtes,
+// et son clou (l'épée) tenu bas, qui passe derrière le corps. Grille de 20 x 25 ; la tête occupe les rangées 0 à 16.
+export const KNIGHT_HEAD_ROWS = 17
 export function knightLayer() {
-  const l = new Layer(18, 24)
-  const W_ = '#f4f7f5'
-  const S_ = '#bfcac8'
+  const l = new Layer(20, 25)
+  const W_ = '#f6f8f6'
+  const S_ = '#c4cfcd'
   const E_ = '#05070c'
   const row = (y, x0, x1, c) => {
     for (let x = x0; x <= x1; x++) l.set(x, y, c)
   }
-  const horn = [
-    [4, 5], [3, 5], [3, 4], [4, 4], [2, 3], [3, 3], [1, 3], [1, 2], [2, 2], [0, 1], [1, 1], [0, 0], [1, 0], [2, 0],
-  ]
+  // Le clou d'abord, pour qu'il passe derrière le corps : de la main vers le bas à droite.
+  for (let x = 4; x <= 19; x++) {
+    const y = 18 + Math.round(((x - 4) * 5) / 15)
+    l.set(x, y, '#e6edf1')
+    l.set(x, y + 1, '#c1ccd3')
+    l.set(x, y + 2, '#8c97a6')
+  }
+  for (const [x, y] of [[1, 17], [2, 17], [2, 18]]) l.set(x, y, '#3a4258')
+  for (const y of [17, 18, 19, 20]) l.set(3, y, '#aab4be')
+  // Cornes : montent en arc vers l'extérieur, le bout revient vers l'intérieur.
+  const horn = [[5, 6], [4, 6], [4, 5], [5, 5], [3, 4], [4, 4], [2, 3], [3, 3], [2, 2], [3, 2], [2, 1], [3, 1], [3, 0], [4, 0]]
   for (const [x, y] of horn) {
     l.set(x, y, W_)
-    l.set(17 - x, y, W_)
+    l.set(19 - x, y, W_)
   }
-  row(5, 5, 12, W_)
-  row(6, 4, 13, W_)
-  for (let y = 7; y <= 11; y++) row(y, 3, 14, W_)
-  row(12, 4, 13, W_)
-  row(13, 6, 11, S_)
-  for (let y = 7; y <= 12; y++) l.set(y === 12 ? 13 : 14, y, S_)
-  for (const x0 of [4, 10]) {
-    row(8, x0 + 1, x0 + 2, E_)
-    row(9, x0, x0 + 3, E_)
-    row(10, x0, x0 + 3, E_)
-    row(11, x0 + 1, x0 + 2, E_)
+  // Tête.
+  row(6, 4, 15, W_)
+  row(7, 3, 16, W_)
+  for (let y = 8; y <= 13; y++) row(y, 2, 17, W_)
+  row(14, 3, 16, W_)
+  row(15, 4, 15, W_)
+  row(16, 7, 12, S_)
+  for (let y = 8; y <= 13; y++) l.set(17, y, S_)
+  row(15, 13, 15, S_)
+  // Yeux ovales, bas dans la tête.
+  for (const x0 of [4, 11]) {
+    row(10, x0 + 1, x0 + 3, E_)
+    row(11, x0, x0 + 4, E_)
+    row(12, x0, x0 + 4, E_)
+    row(13, x0 + 1, x0 + 3, E_)
   }
-  row(14, 7, 10, '#222b49')
-  row(15, 6, 11, '#222b49')
-  for (let y = 16; y <= 20; y++) {
-    row(y, 5, 12, '#222b49')
-    for (let x = 6; x <= 11; x += 2) l.set(x, y, '#37436e')
+  // Cape bleu-gris à rayures en biais, bas dentelé, jambes noires.
+  const C_ = '#222b49'
+  row(17, 8, 11, C_)
+  row(18, 7, 12, C_)
+  row(19, 6, 13, C_)
+  row(20, 6, 13, C_)
+  row(21, 5, 14, C_)
+  row(22, 5, 14, C_)
+  for (let y = 18; y <= 22; y++) {
+    l.set(7 + ((y - 18) >> 1), y, '#37436e')
+    l.set(12 - ((y - 18) >> 1), y, '#37436e')
   }
-  row(21, 6, 11, '#1a2240')
-  for (const x of [6, 7, 10, 11]) {
-    l.set(x, 22, E_)
+  for (const x of [5, 6, 9, 10, 13, 14]) l.set(x, 23, '#1a2240')
+  for (const x of [7, 8, 11, 12]) {
     l.set(x, 23, E_)
+    l.set(x, 24, E_)
   }
-  for (const [x, y] of [[13, 15], [14, 16], [14, 17], [15, 18], [15, 19], [16, 20], [16, 21]]) l.set(x, y, '#cfd9d6')
-  l.set(12, 15, E_)
+  // Bras et main qui tiennent le clou.
+  l.set(5, 19, C_)
+  l.set(5, 20, C_)
+  l.set(4, 19, S_)
   return l
 }
