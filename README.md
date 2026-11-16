@@ -1,9 +1,10 @@
 # hugo-themes
 
-Fonds d'écran animés pour l'onglet Code de l'app Claude Desktop (en construction).
+Fonds d'écran animés en pixel art pour l'onglet Code de l'app Claude Desktop.
 
-Pour l'instant le mod ne contient aucun fond : il remet simplement le thème d'origine de Claude Code
-au démarrage de chaque session. Les fonds seront ajoutés ensuite sous forme de scènes SVG animées.
+Fond fourni pour l'instant : `greenpath`, une grotte verdoyante avec un lac, des lianes, des lucioles,
+un banc et un petit chevalier au masque blanc. Les animations avancent par paliers pour garder l'effet pixel,
+et s'arrêtent si le système demande de réduire les animations.
 
 ## Installation
 
@@ -13,3 +14,14 @@ Dans une session Claude Code :
     /plugin install hugo-themes@hugo-themes
 
 Puis démarrer une nouvelle session locale dans l'onglet Code.
+
+## Utilisation
+
+- `/fond` liste les fonds
+- `/fond greenpath` applique un fond (le choix est mémorisé)
+- `/fond off` revient au thème de base de Claude Code
+
+## Ajouter un fond
+
+Créer un fichier dans `hooks/scenes/` qui exporte une fonction renvoyant un SVG (voir `greenpath.js`),
+puis l'ajouter à `SCENES` dans `hooks/register.js`.
