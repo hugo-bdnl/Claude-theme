@@ -30,33 +30,31 @@ async function applyScene($, name) {
   throw lastError
 }
 
+// État du module (repart de zéro à chaque rechargement) :
+// wanted : tant que le fond n'a pas été retiré avec /fond off ; drawn : l'app a confirmé qu'une fenêtre le dessine.
+const state = { wanted: true, drawn: false, attempts: 0 }
+
+async function chosen($) {
+  const saved = await $.store.get('scene')
+  if (saved === 'off') return undefined
+  return SCENES[saved] ? saved : DEFAULT_SCENE
+}
+
+// Pose le fond voulu, sans jamais faire échouer le démarrage ou l'envoi d'un message.
+async function ensure($) {
+  try {
+    const name = await chosen($)
+    state.wanted = name !== undefined
+    if (!state.wanted) return
+    const set = await applyScene($, name)
+    state.drawn = set.isDrawn === true
+  } catch (error) {
+    state.drawn = false
+    void $.ui.status('hugo-themes : ' + String(error))
+  }
+}
+
 export function register(on) {
-  // true tant que le fond n'a pas été retiré avec /fond off
-  let wanted = true
-  // true quand l'app a confirmé qu'une fenêtre dessine le fond
-  let drawn = false
-  let attempts = 0
-
-  async function chosen($) {
-    const saved = await $.store.get('scene')
-    if (saved === 'off') return undefined
-    return SCENES[saved] ? saved : DEFAULT_SCENE
-  }
-
-  // Pose le fond voulu, sans jamais faire échouer le démarrage ou l'envoi d'un message.
-  async function ensure($) {
-    try {
-      const name = await chosen($)
-      wanted = name !== undefined
-      if (!wanted) return
-      const set = await applyScene($, name)
-      drawn = set.isDrawn === true
-    } catch (error) {
-      drawn = false
-      void $.ui.status('hugo-themes : ' + String(error))
-    }
-  }
-
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'fond',
@@ -65,8 +63,8 @@ export function register(on) {
     await ensure($)
     // La fenêtre peut se connecter après le démarrage : on réessaie quelques fois, toutes les 3 secondes.
     $.clock.every(3000, () => {
-      if (wanted && !drawn && attempts < 10) {
-        attempts += 1
+      if (state.wanted && !state.drawn && state.attempts < 10) {
+        state.attempts += 1
         void ensure($)
       }
     })
@@ -75,14 +73,14 @@ export function register(on) {
 
   // Après /clear, /resume et /branch, l'app remet le thème à zéro : on repose le fond.
   on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
-    attempts = 0
+    state.attempts = 0
     await ensure($)
     return next(e)
   })
 
   // À l'envoi d'un message : on repose le fond tant que l'app n'a pas confirmé l'avoir dessiné.
   on('prompt.submit', async ($, e, next) => {
-    if (wanted && !drawn) await ensure($)
+    if (state.wanted && !state.drawn) await ensure($)
     return next(e)
   })
 
@@ -91,18 +89,18 @@ export function register(on) {
     const arg = e.args.trim().toLowerCase()
     if (!arg) return { text: 'Fonds : ' + names.join(', ') + ' · /fond <nom> pour en choisir un, /fond off pour revenir au thème de base.' }
     if (arg === 'off') {
-      wanted = false
-      drawn = false
+      state.wanted = false
+      state.drawn = false
       await $.store.set('scene', 'off')
       await $.theme.clear()
       return { text: 'Fond retiré : thème de base de Claude Code.' }
     }
     if (!SCENES[arg]) return { text: 'Fond inconnu "' + arg + '". Disponibles : ' + names.join(', ') }
-    wanted = true
+    state.wanted = true
     await $.store.set('scene', arg)
     const set = await applyScene($, arg)
-    drawn = set.isDrawn === true
-    return { text: drawn ? 'Fond ' + SCENES[arg].title + ' appliqué.' : 'Fond ' + SCENES[arg].title + ' enregistré (' + set.reason + ')' }
+    state.drawn = set.isDrawn === true
+    return { text: state.drawn ? 'Fond ' + SCENES[arg].title + ' appliqué.' : 'Fond ' + SCENES[arg].title + ' enregistré (' + set.reason + ')' }
   })
 
   on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
