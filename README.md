@@ -14,8 +14,8 @@ Puis démarrer une nouvelle session locale dans l'onglet Code.
 
 ## Utilisation
 
-- `/theme` liste les thèmes disponibles
-- `/theme midnight` applique un thème
+- `/mytheme` liste les thèmes disponibles
+- `/mytheme midnight` applique un thème
 
 Thèmes fournis : `paper`, `midnight`, `forest`. Le thème par défaut est `paper`.
 

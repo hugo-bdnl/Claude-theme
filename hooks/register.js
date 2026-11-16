@@ -6,8 +6,8 @@ export function register(on) {
   // Applique le thème mémorisé (ou celui par défaut) à chaque session
   on('session.start', async ($, e, next) => {
     await $.command.register({
-      name: 'theme',
-      description: 'Changer de thème : /theme <nom>, ou /theme pour la liste',
+      name: 'mytheme',
+      description: 'Changer de thème : /mytheme <nom>, ou /mytheme pour la liste',
     })
     const saved = await $.store.get('theme')
     const name = typeof saved === 'string' && THEMES[saved] ? saved : DEFAULT_THEME
@@ -15,7 +15,7 @@ export function register(on) {
     return next(e)
   })
 
-  on('command.run', { command: 'theme' }, async ($, e) => {
+  on('command.run', { command: 'mytheme' }, async ($, e) => {
     const wanted = e.args.trim().toLowerCase()
     const current = await $.store.get('theme')
     if (!wanted) {
